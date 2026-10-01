@@ -1,28 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
-import Icon from '../components/Icons.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
-import { gallery, site } from '../data/site';
+import Social from '../components/Social.astro';
+import { gallery } from '../data/site';
 ---
-<Base title="Gallery" description="A gallery of sacred, custom tattoo work by Bhagavan Das Shyam (Shug): back pieces, sleeves, sacred script and more." solidHeader>
+<Base title="Gallery" solidHeader>
   <section class="page-head dark">
     <div class="tanka"></div>
-    <div class="wrap reveal">
-      <span class="eyebrow">Gallery</span>
-      <h1 class="h2">Living talismans</h1>
-      <p class="lead">Every piece here began as one person’s intention. Tap any image to view it full size; use arrow keys or swipe to move through.</p>
-    </div>
+    <div class="wrap"><h1 class="h2">Gallery</h1></div>
   </section>
   <section class="section dark" style="padding-top:20px">
     <div class="wrap">
       <GalleryGrid items={gallery} />
-      <div class="cta-band reveal" style="margin-top:60px">
-        <p class="lead">New work is shared first on Instagram.</p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
-          <a class="btn btn--gold" href={site.social.instagram} target="_blank" rel="noopener"><Icon name="instagram" /> @satmanavyogi_tattoo</a>
-          <a class="btn" href="/journey">Begin your journey <Icon name="arrow" /></a>
-        </div>
-      </div>
+      <div style="display:flex;justify-content:center;margin-top:48px"><Social /></div>
     </div>
   </section>
 </Base>

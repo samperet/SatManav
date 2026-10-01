@@ -1,6 +1,5 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Icon from '../../components/Icons.astro';
 import ProductCard from '../../components/ProductCard.astro';
 import { products, site } from '../../data/site';
 
@@ -8,57 +7,42 @@ export function getStaticPaths() {
   return products.map((p) => ({ params: { slug: p.slug }, props: { product: p } }));
 }
 const { product: p } = Astro.props;
-const others = products.filter((x) => x.slug !== p.slug).slice(0, 3);
+const related = products.filter((x) => x.slug !== p.slug).slice(0, 3);
 ---
-<Base title={p.name} description={p.blurb} image={p.images[0].src} solidHeader>
+<Base title={p.name} image={p.images[0].src} solidHeader>
   <section class="section paper" style="padding-top:130px">
     <div class="wrap">
       <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/shop">Shop</a> / {p.name}</nav>
       <div class="pdp">
-        <div class="reveal">
+        <div>
           <div class="pdp__main"><img src={p.images[0].src} alt={p.images[0].alt} data-pdp-main width="800" height="1000" /></div>
           {p.images.length > 1 && (
-            <div class="thumbs" role="group" aria-label="Product images">
+            <div class="thumbs">
               {p.images.map((im, i) => (
-                <button type="button" data-thumb={im.src} data-alt={im.alt} aria-current={i === 0 ? 'true' : 'false'} aria-label={`Show image ${i + 1}`}>
+                <button type="button" data-thumb={im.src} data-alt={im.alt} aria-current={i === 0 ? 'true' : 'false'} aria-label={im.alt}>
                   <img src={im.src} alt="" loading="lazy" width="74" height="74" />
                 </button>
               ))}
             </div>
           )}
         </div>
-        <div class="reveal" style="--d:.1s">
-          <span class="eyebrow">{p.kind}</span>
+        <div>
           <h1>{p.name}</h1>
           <span class="price">${p.price.toFixed(2)}</span>
-          <p class="lead">{p.blurb}</p>
-          <ul>{p.details.map((d) => <li>{d}</li>)}</ul>
-          <div
-            class="buy-row"
-            data-buy
-            data-name={p.name}
-            data-price={p.price}
-            data-checkout={p.checkoutUrl ?? ''}
-            data-email={site.contact.email}
-          >
-            <div class="qty" aria-label="Quantity">
+          <div class="buy-row" data-buy data-name={p.name} data-price={p.price} data-checkout={p.checkoutUrl ?? ''} data-email={site.contact.email}>
+            <div class="qty">
               <button type="button" data-qty="-1" aria-label="Decrease quantity">−</button>
               <output data-qty-out aria-live="polite">1</output>
               <button type="button" data-qty="1" aria-label="Increase quantity">+</button>
             </div>
-            <a class="btn" href="#" data-buy-btn>{p.checkoutUrl ? 'Buy now' : 'Order by email'} <Icon name="arrow" /></a>
+            <a class="btn" href="#" data-buy-btn>Buy</a>
           </div>
-          <p class="note">
-            {p.checkoutUrl
-              ? 'Secure checkout opens in a new tab.'
-              : 'Orders are confirmed personally. We’ll reply with payment and pickup or shipping details.'}
-          </p>
         </div>
       </div>
 
-      <h2 class="title reveal" style="font-size:1.5rem;color:var(--maroon-2);margin:90px 0 22px">You may also love</h2>
+      <h2 class="title" style="font-size:1.5rem;color:var(--maroon-2);margin:90px 0 22px">Related products</h2>
       <div class="products">
-        {others.map((o, i) => <ProductCard product={o} delay={i * 0.08} />)}
+        {related.map((o) => <ProductCard product={o} />)}
       </div>
     </div>
   </section>
@@ -87,9 +71,8 @@ const others = products.filter((x) => x.slug !== p.slug).slice(0, 3);
         btn.target = '_blank';
         btn.rel = 'noopener';
       } else {
-        const total = (Number(price) * qty).toFixed(2);
-        const body = `Hello Shug,\n\nI'd like to order:\n  ${qty} × ${name} ($${total})\n\nName:\nShipping address (or local pickup):\n\nThank you!`;
-        btn.href = `mailto:${email}?subject=${encodeURIComponent(`Order: ${name}`)}&body=${encodeURIComponent(body)}`;
+        const body = `${qty} × ${name} ($${(Number(price) * qty).toFixed(2)})`;
+        btn.href = `mailto:${email}?subject=${encodeURIComponent(name ?? '')}&body=${encodeURIComponent(body)}`;
       }
     };
     row.querySelectorAll<HTMLButtonElement>('[data-qty]').forEach((b) =>

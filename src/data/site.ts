@@ -1,17 +1,12 @@
-// All editable site content lives here. Change copy, prices or links in one place.
+// All site content lives here. Copy is taken from the original satmanavyogitattoos.com.
 
 export const site = {
   name: 'Sat Manav Tattoos',
   tagline: 'Tattoos & Talismans',
   description:
-    'Sacred, custom tattoos by yogi-artist Bhagavan Das Shyam (Shug) in Farmington, Maine. Each piece is co-created with intention, completed with ceremony and empowered as a living talisman.',
+    'Sat Manav Tattoos are pathways to transformation, a connection to ancient wisdom, and an exploration of your inner self.',
   url: 'https://satmanavyogitattoos.com',
   mantra: 'Om Narbhavi Swaha',
-  artist: {
-    name: 'Bhagavan Das Shyam',
-    nickname: 'Shug',
-    years: 25,
-  },
   contact: {
     street: '186 Main St. Suite #3',
     city: 'Farmington',
@@ -20,241 +15,131 @@ export const site = {
     phone: '(207) 542-6606',
     phoneHref: 'tel:+12075426606',
     email: 'satmanavyogi@gmail.com',
-    mapsUrl: 'https://maps.google.com/?q=186+Main+St+Suite+3+Farmington+ME+04938',
   },
   social: {
     instagram: 'https://www.instagram.com/satmanavyogi_tattoo/',
     facebook: 'https://www.facebook.com/satmanavyogitattoos',
   },
-  // Optional: set PUBLIC_FORM_ENDPOINT in Vercel (e.g. a Formspree / Basin URL) to receive
-  // Journey submissions directly. Without it, the form opens a pre-filled email instead.
+  // Optional: set PUBLIC_FORM_ENDPOINT in Vercel (e.g. a Formspree URL) to receive Journey
+  // submissions directly. Without it, the form opens a pre-filled email instead.
   formEndpoint: import.meta.env.PUBLIC_FORM_ENDPOINT ?? '',
 };
 
 export const nav = [
-  { href: '/#approach', label: 'Approach' },
-  { href: '/#process', label: 'Process' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/shop', label: 'Shop' },
-  { href: '/#offerings', label: 'Offerings' },
-  { href: '/#visit', label: 'Visit' },
 ];
 
-export type GalleryItem = { slug: string; alt: string; title: string; w: number; h: number };
+export const intro = {
+  title: 'More than just ink',
+  text: 'Sat Manav Tattoos are pathways to transformation, a connection to ancient wisdom, and an exploration of your inner self. Merge art with spirituality, and create tattoos that inspire, empower, and transcend.',
+};
+
+export const artist = {
+  name: 'Bhagavan Das Shyam',
+  text: 'Bhagavan Das Shyam (Shug) is a devoted practitioner of Yoga and the artist behind Sat manav Tattoos. With over 25 years of intensive training and practice, Shug infuses each tattoo with purpose, healing, and blessings. Guided by his Guru and empowered by ancient wisdom.',
+};
+
+export type GalleryItem = { slug: string; alt: string; w: number; h: number };
 
 export const gallery: GalleryItem[] = [
-  { slug: 'tiger-back', title: 'Tiger Rising', alt: 'Full back piece: a tiger rising through waves and blossoms', w: 956, h: 2048 },
-  { slug: 'ganesha-back', title: 'Ganesha', alt: 'Full back piece: Ganesha in fine black-and-grey linework', w: 957, h: 2048 },
-  { slug: 'peony-sleeve', title: 'Peony & Wind', alt: 'Full sleeve: red peonies and dark wind bars', w: 1200, h: 1834 },
-  { slug: 'tiger-chest', title: 'Leaping Tiger', alt: 'Chest piece: a leaping tiger among clouds', w: 956, h: 2048 },
-  { slug: 'crown-head', title: 'Crown Mandala', alt: 'Crown of the head: sacred mandala pattern', w: 956, h: 2048 },
-  { slug: 'guardian-back', title: 'Guardian', alt: 'Full back piece: a fierce Himalayan guardian mask', w: 946, h: 2048 },
-  { slug: 'sanskrit-ribs', title: 'Sacred Script', alt: 'Ribs: flowing Sanskrit script', w: 1105, h: 2048 },
-  { slug: 'tiger-bodysuit', title: 'Tiger & Deity', alt: 'Side and sleeve: tiger, deity and koi in full colour', w: 1140, h: 2048 },
-  { slug: 'serpent-sleeve', title: 'Naga', alt: 'Sleeve: serpentine black-work with ornamental scales', w: 956, h: 2048 },
-  { slug: 'guardian-sleeve', title: 'Guardian Lion', alt: 'Half sleeve: guardian lion in black-and-grey', w: 957, h: 2048 },
+  { slug: 'tiger-chest', alt: 'Tiger chest piece', w: 956, h: 2048 },
+  { slug: 'ganesha-back', alt: 'Ganesha back piece', w: 957, h: 2048 },
+  { slug: 'peony-sleeve', alt: 'Peony sleeve', w: 1200, h: 1834 },
+  { slug: 'guardian-back', alt: 'Guardian back piece', w: 946, h: 2048 },
+  { slug: 'crown-head', alt: 'Head tattoo', w: 956, h: 2048 },
+  { slug: 'tiger-back', alt: 'Tiger back piece', w: 956, h: 2048 },
+  { slug: 'guardian-sleeve', alt: 'Black-and-grey sleeve', w: 957, h: 2048 },
+  { slug: 'sanskrit-ribs', alt: 'Sanskrit script tattoo', w: 1105, h: 2048 },
+  { slug: 'tiger-bodysuit', alt: 'Full colour side and sleeve', w: 1140, h: 2048 },
+  { slug: 'serpent-sleeve', alt: 'Black-work sleeve', w: 956, h: 2048 },
 ];
 
 export type Product = {
   slug: string;
   name: string;
   price: number;
-  kind: 'Art print' | 'Aftercare';
-  blurb: string;
-  details: string[];
   images: { src: string; alt: string }[];
   // Paste a Stripe / Square payment link here to enable instant checkout.
   checkoutUrl?: string;
 };
 
 export const products: Product[] = [
+  { slug: 'saraswati-and-dragon-print', name: 'Saraswati and Dragon', price: 120, images: [{ src: '/images/shop/saraswati.webp', alt: 'Saraswati and Dragon print' }] },
+  { slug: 'tiger-on-waterfall-print', name: 'Tiger on Waterfall – Print', price: 20, images: [{ src: '/images/shop/tiger-waterfall.webp', alt: 'Tiger on Waterfall print' }] },
   {
-    slug: 'saraswati-and-dragon-print',
-    name: 'Saraswati and Dragon',
-    price: 120,
-    kind: 'Art print',
-    blurb: 'Saraswati, goddess of wisdom, music and learning, rides with a coiling dragon. An original painting by Shug, reproduced as a print.',
-    details: ['Original artwork by Bhagavan Das Shyam', 'Ships unframed'],
-    images: [{ src: '/images/shop/saraswati.webp', alt: 'Painting of Saraswati playing the veena above a golden dragon' }],
-  },
-  {
-    slug: 'tiger-on-waterfall-print',
-    name: 'Tiger on Waterfall',
-    price: 20,
-    kind: 'Art print',
-    blurb: 'A black-and-grey tiger descending a waterfall through bamboo: strength meeting flow. Print of an original drawing by Shug.',
-    details: ['Original drawing by Bhagavan Das Shyam', 'Ships unframed'],
-    images: [{ src: '/images/shop/tiger-waterfall.webp', alt: 'Ink drawing of a tiger on a waterfall with bamboo' }],
-  },
-  {
-    slug: 'sat-manav-tattoo-salve',
-    name: 'Sat Manav Tattoo Salve',
-    price: 20,
-    kind: 'Aftercare',
-    blurb: 'The healing balm Shug sends home with clients. A gentle salve to nourish fresh ink through the vulnerable first weeks.',
-    details: ['Pocket-sized tin', 'For fresh and healed tattoos'],
+    slug: 'sat-manav-tattoo-salve', name: 'Sat Manav Tattoo Salve', price: 20,
     images: [
-      { src: '/images/shop/salve-1.webp', alt: 'Sat Manav Tattoo Salve tin on a dark wooden surface' },
-      { src: '/images/shop/salve-2.webp', alt: 'Open tin showing the pale golden salve' },
-      { src: '/images/shop/salve-3.webp', alt: 'A stack of Sat Manav salve tins' },
+      { src: '/images/shop/salve-1.webp', alt: 'Sat Manav Tattoo Salve' },
+      { src: '/images/shop/salve-2.webp', alt: 'Sat Manav Tattoo Salve, open tin' },
+      { src: '/images/shop/salve-3.webp', alt: 'Sat Manav Tattoo Salve tins' },
     ],
   },
   {
-    slug: 'surya-sunscreen',
-    name: 'Surya Sunscreen',
-    price: 25,
-    kind: 'Aftercare',
-    blurb: 'Named for the sun deity. An all-natural sunscreen stick, made in Maine, to keep healed tattoos bright for years.',
-    details: ['All-natural ingredients', 'Made in Maine'],
+    slug: 'surya-sunscreen', name: 'Surya Sunscreen', price: 25,
     images: [
-      { src: '/images/shop/surya-1.webp', alt: 'Surya sunscreen stick in a black tube' },
-      { src: '/images/shop/surya-2.webp', alt: 'Surya sunscreen next to an open tin of salve' },
+      { src: '/images/shop/surya-1.webp', alt: 'Surya Sunscreen' },
+      { src: '/images/shop/surya-2.webp', alt: 'Surya Sunscreen with salve' },
     ],
   },
 ];
 
-export const process = [
-  {
-    n: '01',
-    title: 'Set an intention',
-    sanskrit: 'Sankalpa',
-    text: 'Share what you hope the tattoo will hold: a release, a threshold, a protection, a prayer. The Journey form is simply a place to start.',
-  },
-  {
-    n: '02',
-    title: 'Co-create the design',
-    sanskrit: 'Darshan',
-    text: 'In consultation we listen for the image together, refining symbol, size and placement until it feels unmistakably yours.',
-  },
-  {
-    n: '03',
-    title: 'Ceremony & tattooing',
-    sanskrit: 'Puja',
-    text: 'Sessions open with grounding and intention. The studio is calm, clean and unhurried, and you are cared for through every break.',
-  },
-  {
-    n: '04',
-    title: 'Empowerment & healing',
-    sanskrit: 'Prana Pratishta',
-    text: 'The finished work is empowered through yogic ritual, then supported with aftercare and optional purification practices.',
-  },
-];
-
-// Long-form teachings, edited for clarity. Shown as expandable panels.
 export const teachings = [
   {
-    id: 'intro',
-    title: 'Intro to sacred tattooing',
-    lead: 'Tattoos speak in pattern and natural form, calling us back to balance with ourselves and the world.',
+    title: 'Intro to Sacred Tattooing',
     body: [
-      'Across time, yogis and seers have embodied this voice. It pierces the veil of the everyday mind and expands how we see ourselves and one another, and from that wider view, real change follows.',
-      'Sacred tattoo design grows out of this practice of realization, which goes far beyond the standards of the modern tattoo industry. Sat Manav Tattoos exists to keep this rare view of an ancient craft alive, for the benefit of all beings.',
+      'Tattoos talk in patterns, organic and natural forms. They call us from within to return to our pure state of existence and awareness, to a life that works in balance with the world and contributes to the overall wellbeing of all. Yogis and seers across time have embodied this voice, which pierces the veil of the mundane mind. By expanding the view of themselves and those around them, they inspire great positive change. Sacred tattoo design comes through this practice of true realization—one that goes far beyond the standards of the modern tattoo industry. It is the goal and dedication of Sat Manav Tattoos to uphold and continue this rare and sacred view of this ancient craft for the benefit of all beings. OM NARBHAVI SWAHA',
     ],
   },
   {
-    id: 'preparation',
-    title: 'Preparing for your consultation',
-    lead: 'Before we meet, make a little room to listen inward.',
+    title: 'Preparation',
     body: [
-      'Set aside time to reflect or meditate on your life and on your intentions going forward. Notice any unusual thoughts, insights or synchronicities that arise; they are often part of the design.',
-      'For your consultation and for every session, leave some space afterwards. Try not to rush straight back into work or family demands, so you can stay with your inner experience.',
+      'To prepare for your initial consultation, you want to expand your awareness.',
+      'Set aside some time for contemplation. Reflect and meditate on life and your intentions moving forward.',
+      'Pay attention to unique thoughts, insights, and synchronicities that may arise through your contemplations,',
+      'Both for your initial appointment and for each tattoo session, please try to plan ahead and make sure that you have some time and space after your appointments. Try not to rush straight back into family dynamics, work, etc. You want to focus as much as possible on your internal experience, with minimal distractions.',
     ],
   },
   {
-    id: 'purification',
-    title: 'Purification & aftercare',
-    lead: 'Tattooing is itself a purification, and the healing window afterwards deserves care.',
+    title: 'Purification',
     body: [
-      'The skin is our largest organ and the sheath between inner and outer worlds. When it is opened, the body becomes more sensitive to its surroundings. The immune response it triggers is often used to release old impurities, physical and emotional.',
-      'To support that release, you can choose additional practices: personal instruction in meditation, pranayama or yoga asana; consultations with Sat Manav’s natural healers; bodywork and spinal alignment; or a personal retreat at Sat Manav Yoga Ashram. How deeply you engage is entirely up to you.',
+      'The process of tattooing is itself a purification. Once the tattoo is complete there is a period of vulnerability before the skin has healed over. The skin is our largest organ, which constantly moves and reacts to the internal and external environment. The skin is also our sheath between the inner and the outer world. Once that sheath is broken, the body (particularly the area of the tattoo) becomes more vulnerable to its environment. Intentionally breaking the skin barrier also stimulates the immune response. Often the body will use this opportunity to release impurities, which can cause pain and negative energy. These impurities come in many forms, and it’s important to be aware of them and help release them.',
+      'For this reason, I suggest additional practices to support purification. The level at which you engage in them is entirely up to you. If you are interested, we can discuss a wide array of possibilities, such as: personal instruction in meditation, pranayama, yoga asanas; health consultations with Sat Manav’s skilled natural healers; bodywork/massage/spinal alignment; a personal retreat at Sat Manav Yoga Ashram.',
     ],
   },
   {
-    id: 'times',
     title: 'Tattooing in our times',
-    lead: 'In days past, tattoos marked new chapters. They still can.',
     body: [
-      'Many cultures understood the power of controlled pain to release trauma and loosen the limits of the past. Once released, new patterns could take shape, and the tattoo marked that new chapter with hope and confidence.',
-      'A tattoo made with clear intention becomes a living talisman on your path. Some traditions held that ancestors would recognise us by our markings. In a disconnected world, sacred marks can still re-establish connection to our shared values: compassion for all beings and care for the planet.',
+      'In days past, magic and innate power were the driving forces behind the sacred craft of tattooing. Across different times and places, various cultures expressed their own versions of this ancient spiritual craft, yet all of them recognized the power of stimulating the pain response in a controlled environment to allow for impurities and negative trauma be released, expanding beyond limitations of our past. Once this release could happen, new patterns and direction could take shape. Tattoos marked this new chapter, bringing hope and confidence into the wearers life for what may lie ahead.',
+      'A tattoo created with specific intention gives you a living talisman that becomes a part of your life and path. Some cultures also believed that after death a person would be identified by their ancestors through the markings they wore. This idea, though somewhat lost within time, can still hold true for a modern person living in a disconnected world out of balance. Though we are living in a world that has oppressed the customs and ceremonial ways of the past, does this mean we should all submit and identify with shallow self-serving values? How do we look for opportunities to reestablish connection? Or looking to identify and express our innate values as a human species, unified in reality, defined by compassion for all beings, and seeking to defend the planet and benefit all.',
     ],
   },
   {
-    id: 'empowering',
     title: 'Empowering your tattoo',
-    lead: 'Form infused with intention and charged with life force.',
     body: [
-      'Spiritual traditions have long held that prana, the life force, can be transferred into an object such as a sacred stone or statue, charging it with intention. This practice, prana pratishta, also lives in sacred tattoo traditions like Thai Sak Yant.',
-      'Drawing on in-depth training in yogic ritual, Shug completes each tattoo journey with an empowerment ceremony that binds the beginning, middle and end of the work into one living whole.',
+      'Traditionally and spiritually speaking, the skin is a projection screen for the physical, emotional, and spiritual state of the individual. What happens when we manipulate the skin with permanent marks? A form has now been inscribed onto you, and can bring you powerful insight. What happens when living tissue is manipulated by an outside force? Trust that the end result and the means to get there will be worth the investment. The more we explore this process and focus in on its potential, the more tattooing becomes a magical possibility for divine transformation. Since ancient times, spiritual peoples have recognized that it is possible to transfer energy (prana) from something living into an inanimate object, like a sacred stone or statue. Once this transference has been made, the literal particles that compose the object become charged and infused with intention and energy. As many accounts attest, the object can even become animated and exhibit miraculous, lifelike signs. This process, known as prana pratishta, is also part of sacred tattooing traditions such as Thai Sak Yant and a few others.',
+      'The idea that the tattoo becomes “activated” or empowered by this process is nothing new but is very much neglected in our times. Through my in-depth training in Yogic ritual, an empowerment process is used to finalize the tattoo work once we have completed the journey. This is a very powerful, life-altering aspect of the work that binds the beginning, middle, and end into a mystical union—form infused with intention and charged with lifeforce.',
     ],
   },
 ];
 
-export type Testimonial = { name: string; quote: string; more?: string };
+export type Testimonial = { name: string; paragraphs: string[] };
 
 export const testimonials: Testimonial[] = [
-  {
-    name: 'Audrey',
-    quote: 'The piece feels like a collaborative one in the best way, and absolutely pure.',
-    more: 'Shug held space for the full intention of my tattoo. We spent time mixing colors together, we laughed, we shared stories.',
-  },
-  {
-    name: 'Love',
-    quote: 'Absolutely walked away from the experience with much more than just a tattoo.',
-    more: 'Atmosphere was 10/10, from the relaxing music to the gentle scents of palo santo.',
-  },
-  {
-    name: 'Otto',
-    quote: 'I spent 3 years looking for the right artist and just as I gave up on my search Shug came into my life.',
-    more: 'Receiving a tattoo from Shug is a spiritual endeavor all in itself.',
-  },
-  {
-    name: 'Justin',
-    quote: 'This is the first time that I’ve ever had a tattoo artist be so intentional and thoughtful of what my next tattoo was going to be.',
-  },
-  {
-    name: 'Jess',
-    quote: 'There is genuine power behind the art that will benefit the wearer.',
-    more: 'His line work, coloring, and shading skills are top notch. I felt comfortable throughout a 6 hour session.',
-  },
-  {
-    name: 'Farrah',
-    quote: 'I am absolutely in love with my tattoo and I smile every time I look at it.',
-    more: 'He provided a beautiful grounding and intention ritual. I felt contained and held in the space he has created.',
-  },
-  {
-    name: 'Jen',
-    quote: 'The inclusion of the ceremonies made the finished tattoo that much more meaningful.',
-    more: 'This piece came out more perfectly than I could have ever imagined.',
-  },
-  {
-    name: 'Ciaran',
-    quote: 'His belief in the power of tattoo guides all aspects of the process.',
-  },
-  {
-    name: 'Meg',
-    quote: 'I have received 2 tattoos so far and plan on adding to them. Love them and this place!',
-  },
+  { name: 'Jen', paragraphs: ['When I was first shown Shug’s artwork I knew immediately he was the artist that was supposed to design a tattoo I’ve been wanting for several years. I have no doubt I made the right decision going to see him. This piece came out more perfectly than I could have ever imagined, I absolutely love it!! The degree of thoughtfulness that Shug puts into his artwork and the inclusion of the ceremonies made the finished tattoo that much more meaningful. The conscious connection created through ceremony to your soul spirit and attention to every last detail of his work is truly remarkable. The studio is inviting, clean, bright, easy to access and has plenty of parking. Shug’s artwork and process speaks for itself, is special beyond compare, and is well worth the journey; I highly recommend.'] },
+  { name: 'Otto', paragraphs: ['Having a vision of an original tattoo idea, I knew It would be challenging to find an artist that could not only appreciate the intention, but be willing to co-create an original work. I spent 3 years looking for the right artist and just as I gave up on my search Shug came into my life.', 'From the initial design work, to the process, the intention, ritual, professionalism, and not to mention the experience of receiving a tattoo from Shug being a spiritual endeavor all in it’s self.', 'The respect and gratitude I have for this man’s work is immense. Simply could not recommend him more highly.'] },
+  { name: 'Audrey Gidman', paragraphs: ['My experience was phenomenal. Shug held space for the full intention of my tattoo and spent a lot of time honing the design, bringing in influence from his own background and spirituality to meet mine. The piece feels like a collaborative one in the best way, and absolutely pure. I am so grateful. We were in full dialogue every step of the way—we spent time together mixing colors to create a truly unique piece, we laughed, we shared stories. It’s still in its peeling stage and I’ve already received so many warm compliments. I look forward to our next sitting and I would recommend anyone in search of a talisman, or a tattooing experience outside of the current realm of western ordinary, to seek him out. Ohm Shantih Shug, thank you.'] },
+  { name: 'Justin', paragraphs: ['This is the first time that I’ve ever had a tattoo artist be so intentional and thoughtful of what my next tattoo was going to be. Shug is unlike any other tattoo artist I’ve ever met. He spends time to get to know who you are and what it is your looking for. He talks about the healing power that tattoos have and how the artist themselves must be in the right state of mind when tattooing a person, as the energy they emit flows from them into the tattoo as well.', 'During our sessions we talked about life, how each of us is truly doing and there is a real connection when that takes place. I look forward to all of the work that will take place with Shug in the future.'] },
+  { name: 'Jess', paragraphs: ['I have nothing but great things to say about this tattoo studio, and the artist, Shug. He gives his clients 100% of his focus, right from the start during the consultation, through to the completion of the artwork, and even weeks afterward. Most importantly, he adds an ethereal element to the experience, by ensuring that he has captured his client’s intention in life, whether it be to work through barriers, inspire motivation, release, grief, and any intention you can think of in between. This intention is at the core of each art piece, and he infuses this into the art during the tattoo process. It is a very spiritual, energetic process, that makes the tattoo much more than just a decorative piece. There is genuine power behind the art that will benefit the wearer.', 'Additionally, his line work, coloring, and shading skills are top notch. His studio is clean, comfortable, well-ventilated, and well-lit. I felt comfortable throughout a 6 hour session, with great communication to make sure I had enough breaks, water, etc. I highly recommend this tattoo shop.'] },
+  { name: 'Ciaran O’Donnell', paragraphs: ['Shug is a creative and skilled artist that puts great care into his work. His belief in the power of tattoo guides all aspects of the process and makes for a very positive and complete experience. I highly recommend his services.'] },
+  { name: 'Love', paragraphs: ['Awesome experience thru the entire process, from design ideas to execution. the artist is genuinely interested in creating a unique, intentional bond between you and the tattoo and works to help you strengthen that connection. atmosphere was 10/10, from the relaxing music to the gentle scents of palo santo. in casual conversation I ended up learning a lot about tattoos, their history and place in human culture+spirituality. absolutely walked away from the experience with much more than just a tattoo.'] },
+  { name: 'Farrah', paragraphs: ['My experience with Shug was amazing. It was essential to me that the person who created art on my body was both artistically competent and spiritually connected to the process. Shug took time to understand the choice and meaning about what I was seeking and was supportive of my exploration until I felt in alignment with the image, size and placement. He provided a beautiful grounding and intention ritual. I felt contained and held in the space he has created. I am absolutely in love with my tattoo and I smile every time I look at it – exactly it’s intention.'] },
+  { name: 'Meg Reategui', paragraphs: ['Beautiful and spiritually designed and developed together with Shug.', 'I have received 2 tattoos so far and plan on adding to them. Love them and this place!'] },
 ];
 
 export const offerings = [
-  {
-    title: 'Yantras & sacred geometry',
-    icon: 'yantra',
-    text: 'Initiated in the sacred art of yantra creation, Shug paints energetic geometric talismans, regularly commissioned for homes and practice spaces.',
-  },
-  {
-    title: 'Tattoo retreats',
-    icon: 'retreat',
-    text: 'A focused, immersive tattoo journey at Sat Manav Ashram, shaped around your piece, your intention and your pace.',
-  },
-  {
-    title: 'Woodworking & carpentry',
-    icon: 'wood',
-    text: 'Custom building, natural construction, carving and furniture that reflect the beauty and simplicity of yogic life.',
-  },
-  {
-    title: 'Kirtan with Shiva Lila',
-    icon: 'kirtan',
-    text: 'The yogi trio of Sat Manav Ashram. Call-and-response Sanskrit chant (Nada Yoga, union with sacred sound) celebrating life itself.',
-  },
+  { title: 'Yantras & Sacred Geometry', text: ['I am inspired by Yoga’s incredible use of art, specifically yantras, energetic geometric patterns, and visual talismans. I have trained extensively and received initiation into the sacred art of Yantra creation. I’m an experienced Yantra painter and am regularly commissioned to bring the power of Yantras into peoples’ homes.'] },
+  { title: 'Woodworking & Carpentry', text: ['As a craftsman, I love to create custom building and carpentry projects that reflect the naturalness and beauty of Yogic life. I have extensive experience in natural construction, carving, and custom furniture making.'] },
+  { title: 'Tattoo Retreats — Immersion Experience', text: ['Retreats at sat manav ashram are your opportunity to create a very focused and immersive tattoo experience. These can be customized to fit the needs of your tattoo journey and are created specific for each person.'] },
+  { title: 'Kirtan — The Music of Yoga', text: ['I am a member of Shiva Lila, the Yogi trio of Sat Manav Yoga Ashram. We play to expand our experience of reality though sound. Sanskrit chants create frequencies of fulfillment and enlightenment, known as Nada Yoga—“union with sacred sound.”', 'Sung in a call-and-response format, Kirtan is a true concert, an opportunity to come together, celebrating our most precious possession: Life!'] },
 ];

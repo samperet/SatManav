@@ -1,12 +1,12 @@
 ---
 import '../styles/global.css';
 import { site, nav } from '../data/site';
-import Icon from '../components/Icons.astro';
 import Ticker from '../components/Ticker.astro';
+import Social from '../components/Social.astro';
 
-interface Props { title?: string; description?: string; image?: string; solidHeader?: boolean; }
-const { title, description = site.description, image = '/og.jpg', solidHeader = false } = Astro.props;
-const fullTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.tagline}`;
+interface Props { title?: string; image?: string; solidHeader?: boolean; }
+const { title, image = '/og.jpg', solidHeader = false } = Astro.props;
+const fullTitle = title ? `${title} · ${site.name}` : 'Sat Manav Yogi Tattoos';
 const canonical = new URL(Astro.url.pathname, site.url).href;
 const path = Astro.url.pathname;
 const c = site.contact;
@@ -22,7 +22,6 @@ const jsonLd = {
   image: new URL('/og.jpg', site.url).href,
   address: { '@type': 'PostalAddress', streetAddress: c.street, addressLocality: c.city, addressRegion: c.region, postalCode: c.postal, addressCountry: 'US' },
   sameAs: [site.social.instagram, site.social.facebook],
-  founder: { '@type': 'Person', name: site.artist.name, alternateName: site.artist.nickname },
 };
 ---
 <!doctype html>
@@ -31,16 +30,16 @@ const jsonLd = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
-    <meta name="description" content={description} />
+    <meta name="description" content={site.description} />
     <link rel="canonical" href={canonical} />
     <meta name="theme-color" content="#0b0303" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
     <link rel="apple-touch-icon" href="/icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content={site.name} />
+    <meta property="og:site_name" content="Sat Manav Yogi Tattoos" />
     <meta property="og:title" content={fullTitle} />
-    <meta property="og:description" content={description} />
+    <meta property="og:description" content={site.description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={new URL(image, site.url).href} />
     <meta name="twitter:card" content="summary_large_image" />
@@ -56,14 +55,12 @@ const jsonLd = {
       <div class="wrap bar">
         <a class="brand" href="/" aria-label={`${site.name} home`}>
           <img src="/images/brand/lotus-white.webp" alt="" width="40" height="40" />
-          <span>Sat Manav</span>
+          <span>{site.name}</span>
         </a>
         <button class="menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav" data-menu><span></span><span></span><span></span></button>
         <nav class="nav" id="nav" aria-label="Main">
-          {nav.map((n) => (
-            <a href={n.href} aria-current={path.startsWith(n.href) && n.href !== '/' && !n.href.includes('#') ? 'page' : undefined}>{n.label}</a>
-          ))}
-          <a class="btn" href="/journey">Begin your journey</a>
+          {nav.map((n) => <a href={n.href} aria-current={path.startsWith(n.href) ? 'page' : undefined}>{n.label}</a>)}
+          <a class="btn" href="/journey">Begin Your Spiritual Journey</a>
         </nav>
       </div>
     </header>
@@ -74,63 +71,21 @@ const jsonLd = {
 
     <Ticker />
     <footer class="site-footer">
-      <div class="wrap">
-        <div class="cols">
-          <img src="/images/brand/lotus-white.webp" alt="Sat Manav lotus emblem" width="92" height="94" loading="lazy" />
-          <div>
-            <h2>{site.name}</h2>
-            <p>{c.street}, {c.city}, {c.region} {c.postal}</p>
-            <p><a href={c.phoneHref}>{c.phone}</a> · <a href={`mailto:${c.email}`}>{c.email}</a></p>
-            <div class="socials" style="margin-top:14px">
-              <a href={site.social.instagram} aria-label="Instagram" target="_blank" rel="noopener"><Icon name="instagram" /></a>
-              <a href={site.social.facebook} aria-label="Facebook" target="_blank" rel="noopener"><Icon name="facebook" /></a>
-            </div>
-          </div>
-          <button class="diya" type="button" data-diya aria-pressed="false">
-            <svg viewBox="0 0 64 64" aria-hidden="true">
-              <circle class="glow" cx="32" cy="26" r="26" fill="url(#dg)" />
-              <defs>
-                <radialGradient id="dg"><stop offset="0" stop-color="#ff9a3d" stop-opacity=".55" /><stop offset="1" stop-color="#ff6a3d" stop-opacity="0" /></radialGradient>
-                <linearGradient id="fl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff4d1f" /><stop offset=".6" stop-color="#ffb347" /><stop offset="1" stop-color="#fff2c4" /></linearGradient>
-              </defs>
-              <path class="flame" d="M32 12c4 6 6 10 6 14a6 6 0 0 1-12 0c0-4 2-8 6-14z" fill="url(#fl)" />
-              <path d="M10 38c6 10 38 10 44 0 2-2 6-2 6-2-4 14-52 14-56 0 0 0 4 0 6 2z" fill="#c9a24a" />
-              <path d="M30 32h4v6h-4z" fill="#3d0705" />
-            </svg>
-            <span data-diya-label>Light a diya</span>
-          </button>
-        </div>
-        <div class="fine">
-          <span>© {new Date().getFullYear()} {site.name} · Farmington, Maine</span>
-          <span>{site.mantra}</span>
+      <div class="wrap cols">
+        <img src="/images/brand/lotus-white.webp" alt="" width="110" height="112" loading="lazy" />
+        <div>
+          <h2>{site.name}</h2>
+          <p>{c.street}<br />{c.city}, {c.region} {c.postal}</p>
+          <p><a href={c.phoneHref}>{c.phone}</a></p>
+          <p><a href={`mailto:${c.email}`}>{c.email}</a></p>
+          <Social />
         </div>
       </div>
     </footer>
-
-    <button class="mala" type="button" data-mala aria-label="Reading progress. Click to return to top.">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        {Array.from({ length: 27 }, (_, i) => {
-          const a = (Math.PI * 2 * (i + 0.5)) / 28 + Math.PI / 2;
-          return <circle class="bead" cx={(32 + 23 * Math.cos(a)).toFixed(2)} cy={(32 + 23 * Math.sin(a)).toFixed(2)} r="2.3" />;
-        })}
-        <circle class="guru" cx="32" cy="57" r="3.6" />
-        <text class="om" x="32" y="37" text-anchor="middle">ॐ</text>
-      </svg>
-    </button>
-
-    <div class="breath" data-breath role="dialog" aria-modal="true" aria-label="Breathing practice" aria-hidden="true">
-      <button class="lb-btn lb-close" type="button" data-breath-close aria-label="Close">×</button>
-      <div>
-        <div class="breath__circle" data-breath-circle><img src="/images/brand/lotus-white.webp" alt="" /></div>
-        <p class="breath__word" data-breath-word aria-live="polite">Settle in</p>
-        <p class="breath__hint" data-breath-hint>Three slow breaths. Follow the lotus.</p>
-      </div>
-    </div>
-
-    <div class="toast" data-toast role="status" aria-live="polite"></div>
+    <Ticker />
 
     <script>
-      import '../scripts/delight.ts';
+      import '../scripts/site.ts';
     </script>
   </body>
 </html>
