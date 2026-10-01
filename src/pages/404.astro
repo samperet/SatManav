@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icons.astro';
+---
+<Base title="Path not found" solidHeader>
+  <section class="page-head dark" style="min-height:80vh;display:grid;place-items:center">
+    <div class="tanka"></div>
+    <div class="wrap">
+      <img src="/images/brand/lotus-white.webp" alt="" width="140" height="143" class="lotus" style="width:140px;margin:0 auto 26px" />
+      <span class="eyebrow">404</span>
+      <h1 class="h2">This path has dissolved</h1>
+      <p class="lead">Not every road leads somewhere. This one leads back.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:26px">
+        <a class="btn" href="/">Return home <Icon name="arrow" /></a>
+        <a class="btn btn--ghost" href="/journey" style="color:var(--gold-soft)">Begin your journey</a>
+      </div>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,246 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icons.astro';
+import Ticker from '../components/Ticker.astro';
+import ProductCard from '../components/ProductCard.astro';
+import GalleryGrid from '../components/GalleryGrid.astro';
+import { site, process, teachings, testimonials, products, offerings, gallery } from '../data/site';
+
+const word = 'Sat Manav';
+const c = site.contact;
+const left = testimonials.slice(0, 2);
+const rotating = testimonials.slice(2);
+---
+<Base>
+  <!-- HERO -->
+  <section class="hero" data-hero aria-labelledby="hero-title">
+    <div class="hero__bg"></div>
+    <img class="hero__ganesha" src="/images/brand/ganesha.webp" alt="" width="513" height="769" fetchpriority="high" />
+    <div class="hero__glow" data-hero-glow></div>
+    <div class="wrap hero__inner">
+      <h1 id="hero-title">
+        <span class="hero__word" aria-label={word}>
+          {[...word].map((ch, i) => <span class="ch" style={`--i:${i}`} aria-hidden="true">{ch === ' ' ? ' ' : ch}</span>)}
+        </span>
+        <span class="hero__sub" style="display:block">Tattoos &amp; Talismans</span>
+      </h1>
+      <p class="hero__lede">
+        Sacred, custom tattoos by yogi-artist {site.artist.name}. Each piece is co-created with your intention,
+        completed with ceremony, and empowered to live with you as a talisman.
+      </p>
+      <div class="hero__ctas">
+        <a class="btn" href="/journey">Begin your journey <Icon name="arrow" /></a>
+        <a class="btn btn--ghost" href="/gallery">See the work</a>
+      </div>
+      <div class="hero__facts" aria-label="At a glance">
+        <span>{site.artist.years}+ years of yogic practice</span>
+        <span>Custom designs only</span>
+        <span>Farmington, Maine</span>
+      </div>
+    </div>
+    <a class="hero__scroll" href="#approach">Scroll<i></i></a>
+  </section>
+
+  <Ticker />
+
+  <!-- APPROACH -->
+  <section id="approach" class="section dark ember-bg grain">
+    <div class="wrap intro">
+      <div class="reveal">
+        <span class="eyebrow">Our approach</span>
+        <h2 class="h2">More than just ink</h2>
+        <p class="lead">
+          Sat Manav tattoos are pathways to transformation, a connection to ancient wisdom and an exploration of your inner self.
+        </p>
+        <p>
+          Here, art and spiritual practice are one craft. We create tattoos that inspire, empower and transcend:
+          designed around what you are moving through, and finished with the yogic rites that turn a mark into a talisman.
+        </p>
+        <a class="link-arrow" href="#process">How the journey works →</a>
+      </div>
+      <div class="lotus-wrap reveal" style="--d:.15s">
+        <img class="lotus" src="/images/brand/lotus-white.webp" alt="The Sat Manav lotus emblem" width="400" height="409" data-breath-open />
+        <button class="breath-cue" type="button" data-breath-open>Take one breath with us</button>
+      </div>
+    </div>
+
+    <div class="wrap artist" style="margin-top:clamp(80px,10vw,140px)">
+      <div class="artist__photo reveal">
+        <img src="/images/brand/shug.webp" alt={`${site.artist.name} tattooing in the studio`} width="400" height="518" loading="lazy" />
+      </div>
+      <div class="reveal" style="--d:.1s">
+        <span class="eyebrow">Meet the artist</span>
+        <h2 class="artist__name">{site.artist.name}</h2>
+        <span class="artist__aka">Known to all as “{site.artist.nickname}”</span>
+        <p class="lead">
+          A devoted practitioner of yoga and the hands behind Sat Manav Tattoos.
+        </p>
+        <p>
+          Guided by his Guru and grounded in more than {site.artist.years} years of intensive training and practice,
+          Shug infuses every tattoo with purpose, healing and blessing. Clients describe sessions that feel less like an
+          appointment and more like a ceremony: unhurried, thoughtful and deeply personal.
+        </p>
+        <div class="stats">
+          <div class="stat"><b data-count={site.artist.years}>{site.artist.years}+</b><span>years of practice</span></div>
+          <div class="stat"><b>1:1</b><span>every design co-created</span></div>
+          <div class="stat"><b>ॐ</b><span>finished with ceremony</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section id="process" class="section paper">
+    <div class="wrap">
+      <div class="section-head center reveal">
+        <span class="eyebrow">The journey</span>
+        <h2 class="h2">From intention to talisman</h2>
+        <p class="lead" style="margin-top:14px">Four movements, one living work. Here is what to expect.</p>
+      </div>
+      <ol class="steps" style="list-style:none;padding:0;margin:0">
+        {process.map((s, i) => (
+          <li class="step reveal" style={`--d:${i * 0.1}s`}>
+            <div class="step__n">{s.n}</div>
+            <h3>{s.title}</h3>
+            <em>{s.sanskrit}</em>
+            <p>{s.text}</p>
+          </li>
+        ))}
+      </ol>
+
+      <div class="teachings">
+        <p class="eyebrow reveal" style="justify-content:center;width:100%">Go deeper · the teachings</p>
+        {teachings.map((t, i) => (
+          <details class="teaching reveal" style={`--d:${i * 0.05}s`} open={i === 0}>
+            <summary>
+              <span class="sym" aria-hidden="true"></span>
+              <span><h3>{t.title}</h3><small>{t.lead}</small></span>
+              <span class="read">Read</span>
+            </summary>
+            <div class="teaching__body">
+              {t.body.map((p) => <p>{p}</p>)}
+            </div>
+          </details>
+        ))}
+      </div>
+
+      <div class="cta-band reveal" style="margin-top:56px">
+        <a class="btn" href="/journey">Share your intention <Icon name="arrow" /></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- GALLERY -->
+  <section id="gallery" class="section dark">
+    <div class="wrap">
+      <div class="section-head reveal" style="display:flex;justify-content:space-between;align-items:end;gap:20px;max-width:none;flex-wrap:wrap">
+        <div style="max-width:620px">
+          <span class="eyebrow">Gallery</span>
+          <h2 class="h2">Living talismans</h2>
+          <p class="lead" style="margin-top:12px">Back pieces, sleeves and sacred script, each one drawn for a single person. Tap any piece to look closer.</p>
+        </div>
+        <a class="btn btn--ghost" href="/gallery">Full gallery <Icon name="arrow" /></a>
+      </div>
+      <GalleryGrid items={gallery} preview />
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section id="voices" class="section paper">
+    <div class="wrap">
+      <div class="section-head center reveal">
+        <span class="eyebrow">Testimonials</span>
+        <h2 class="h2">In their words</h2>
+      </div>
+      <div class="voices">
+        <div class="quote-stack">
+          {left.map((t, i) => (
+            <blockquote class="quote reveal" style={`--d:${i * 0.1}s`}>
+              <p>{t.quote}</p>
+              {t.more && <p class="more">{t.more}</p>}
+              <cite>— {t.name}</cite>
+            </blockquote>
+          ))}
+        </div>
+        <button class="om-btn reveal" type="button" data-om aria-label="Sound the Om">
+          <img src="/images/brand/om.webp" alt="" width="269" height="252" loading="lazy" />
+          <small>Tap to sound</small>
+        </button>
+        <div>
+          <div class="carousel" id="car" data-carousel aria-roledescription="carousel" aria-label="More testimonials">
+            {rotating.map((t) => (
+              <blockquote class="quote">
+                <p>{t.quote}</p>
+                {t.more && <p class="more">{t.more}</p>}
+                <cite>— {t.name}</cite>
+              </blockquote>
+            ))}
+          </div>
+          <div class="dots" data-dots="car"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOP -->
+  <section id="shop" class="section paper" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head reveal" style="display:flex;justify-content:space-between;align-items:end;gap:20px;max-width:none;flex-wrap:wrap">
+        <div>
+          <span class="eyebrow">Sat Manav store</span>
+          <h2 class="h2">Sacred art &amp; aftercare</h2>
+        </div>
+        <a class="link-arrow" href="/shop">Visit the shop →</a>
+      </div>
+      <div class="products">
+        {products.map((p, i) => <ProductCard product={p} delay={i * 0.08} />)}
+      </div>
+    </div>
+  </section>
+
+  <!-- OFFERINGS -->
+  <section id="offerings" class="section dark ember-bg grain">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Beyond the needle</span>
+        <h2 class="h2">Additional offerings</h2>
+        <p class="lead" style="margin-top:12px">The same devotion, in other forms. Ask about any of these when you get in touch.</p>
+      </div>
+      <div class="offerings">
+        {offerings.map((o, i) => (
+          <article class="offer reveal" style={`--d:${i * 0.08}s`}>
+            <Icon name={o.icon as any} />
+            <h3>{o.title}</h3>
+            <p>{o.text}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- VISIT -->
+  <section id="visit" class="section dark" style="background:linear-gradient(180deg,var(--ink),#1a0404)">
+    <div class="wrap visit">
+      <div class="reveal">
+        <span class="eyebrow">Visit the studio</span>
+        <h2 class="h2" style="color:var(--gold-soft)">Begin when you’re ready</h2>
+        <p class="lead" style="margin:14px 0 26px">
+          Start with the Journey form and we’ll reach out to plan a consultation. Prefer to talk? Call or email any time.
+        </p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a class="btn" href="/journey">Begin your journey <Icon name="arrow" /></a>
+          <a class="btn btn--ghost" href={c.phoneHref} style="color:var(--gold-soft)">Call {c.phone}</a>
+        </div>
+      </div>
+      <dl class="reveal" style="--d:.1s">
+        <div><dt>Studio</dt><dd><a href={c.mapsUrl} target="_blank" rel="noopener">{c.street}<br />{c.city}, {c.region} {c.postal}</a></dd></div>
+        <div><dt>Phone</dt><dd><a href={c.phoneHref}>{c.phone}</a></dd></div>
+        <div><dt>Email</dt><dd><a href={`mailto:${c.email}`}>{c.email}</a></dd></div>
+        <div><dt>Follow</dt><dd class="socials">
+          <a href={site.social.instagram} aria-label="Instagram" target="_blank" rel="noopener"><Icon name="instagram" /></a>
+          <a href={site.social.facebook} aria-label="Facebook" target="_blank" rel="noopener"><Icon name="facebook" /></a>
+        </dd></div>
+      </dl>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,103 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icons.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { products, site } from '../../data/site';
+
+export function getStaticPaths() {
+  return products.map((p) => ({ params: { slug: p.slug }, props: { product: p } }));
+}
+const { product: p } = Astro.props;
+const others = products.filter((x) => x.slug !== p.slug).slice(0, 3);
+---
+<Base title={p.name} description={p.blurb} image={p.images[0].src} solidHeader>
+  <section class="section paper" style="padding-top:130px">
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/shop">Shop</a> / {p.name}</nav>
+      <div class="pdp">
+        <div class="reveal">
+          <div class="pdp__main"><img src={p.images[0].src} alt={p.images[0].alt} data-pdp-main width="800" height="1000" /></div>
+          {p.images.length > 1 && (
+            <div class="thumbs" role="group" aria-label="Product images">
+              {p.images.map((im, i) => (
+                <button type="button" data-thumb={im.src} data-alt={im.alt} aria-current={i === 0 ? 'true' : 'false'} aria-label={`Show image ${i + 1}`}>
+                  <img src={im.src} alt="" loading="lazy" width="74" height="74" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div class="reveal" style="--d:.1s">
+          <span class="eyebrow">{p.kind}</span>
+          <h1>{p.name}</h1>
+          <span class="price">${p.price.toFixed(2)}</span>
+          <p class="lead">{p.blurb}</p>
+          <ul>{p.details.map((d) => <li>{d}</li>)}</ul>
+          <div
+            class="buy-row"
+            data-buy
+            data-name={p.name}
+            data-price={p.price}
+            data-checkout={p.checkoutUrl ?? ''}
+            data-email={site.contact.email}
+          >
+            <div class="qty" aria-label="Quantity">
+              <button type="button" data-qty="-1" aria-label="Decrease quantity">−</button>
+              <output data-qty-out aria-live="polite">1</output>
+              <button type="button" data-qty="1" aria-label="Increase quantity">+</button>
+            </div>
+            <a class="btn" href="#" data-buy-btn>{p.checkoutUrl ? 'Buy now' : 'Order by email'} <Icon name="arrow" /></a>
+          </div>
+          <p class="note">
+            {p.checkoutUrl
+              ? 'Secure checkout opens in a new tab.'
+              : 'Orders are confirmed personally. We’ll reply with payment and pickup or shipping details.'}
+          </p>
+        </div>
+      </div>
+
+      <h2 class="title reveal" style="font-size:1.5rem;color:var(--maroon-2);margin:90px 0 22px">You may also love</h2>
+      <div class="products">
+        {others.map((o, i) => <ProductCard product={o} delay={i * 0.08} />)}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const main = document.querySelector<HTMLImageElement>('[data-pdp-main]');
+  document.querySelectorAll<HTMLButtonElement>('[data-thumb]').forEach((b, _, all) =>
+    b.addEventListener('click', () => {
+      if (!main) return;
+      main.src = b.dataset.thumb!;
+      main.alt = b.dataset.alt ?? '';
+      all.forEach((x) => x.setAttribute('aria-current', String(x === b)));
+    }),
+  );
+  const row = document.querySelector<HTMLElement>('[data-buy]');
+  if (row) {
+    let qty = 1;
+    const out = row.querySelector('[data-qty-out]')!;
+    const btn = row.querySelector<HTMLAnchorElement>('[data-buy-btn]')!;
+    const { name, price, checkout, email } = row.dataset;
+    const update = () => {
+      out.textContent = String(qty);
+      if (checkout) {
+        btn.href = checkout;
+        btn.target = '_blank';
+        btn.rel = 'noopener';
+      } else {
+        const total = (Number(price) * qty).toFixed(2);
+        const body = `Hello Shug,\n\nI'd like to order:\n  ${qty} × ${name} ($${total})\n\nName:\nShipping address (or local pickup):\n\nThank you!`;
+        btn.href = `mailto:${email}?subject=${encodeURIComponent(`Order: ${name}`)}&body=${encodeURIComponent(body)}`;
+      }
+    };
+    row.querySelectorAll<HTMLButtonElement>('[data-qty]').forEach((b) =>
+      b.addEventListener('click', () => {
+        qty = Math.max(1, Math.min(20, qty + Number(b.dataset.qty)));
+        update();
+      }),
+    );
+    update();
+  }
+</script>

@@ -1,0 +1,24 @@
+---
+import type { GalleryItem } from '../data/site';
+interface Props { items: GalleryItem[]; preview?: boolean; }
+const { items, preview = false } = Astro.props;
+---
+<div class:list={['masonry', { preview }]}>
+  {items.map((g, i) => (
+    <button
+      type="button"
+      class="tile reveal-ink"
+      style={`--d:${(i % 4) * 0.08}s`}
+      data-lightbox
+      data-full={`/images/gallery/${g.slug}.webp`}
+      data-title={g.title}
+      data-alt={g.alt}
+      aria-label={`View larger: ${g.alt}`}
+    >
+      <figure style="margin:0">
+        <img src={`/images/gallery/${g.slug}-sm.webp`} alt={g.alt} width="520" height={Math.round((g.h * 520) / g.w)} loading="lazy" decoding="async" />
+        <figcaption>{g.title}</figcaption>
+      </figure>
+    </button>
+  ))}
+</div>

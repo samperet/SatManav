@@ -1,0 +1,270 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icons.astro';
+import { site } from '../data/site';
+
+const themes = [
+  { id: 'geometric', label: 'Geometric', hint: 'Yantras, mandalas, sacred geometry' },
+  { id: 'abstract', label: 'Abstract', hint: 'Flowing, organic, intuitive forms' },
+  { id: 'eastern', label: 'Eastern traditional', hint: 'Deities, guardians, lotus, tigers' },
+];
+---
+<Base title="Begin Your Journey" description="Share your intention to begin a sacred tattoo journey with Sat Manav Tattoos in Farmington, Maine." solidHeader>
+  <section class="page-head dark">
+    <div class="tanka"></div>
+    <div class="wrap reveal">
+      <span class="eyebrow">Begin your journey</span>
+      <h1 class="h2">Share your intention</h1>
+      <p class="lead">There are no wrong answers. This is simply a place to start; we’ll explore it together in person.</p>
+    </div>
+  </section>
+
+  <section class="section dark ember-bg" style="padding-top:30px">
+    <div class="wrap journey">
+      <form class="form reveal" data-journey data-email={site.contact.email} action={site.formEndpoint || undefined} method="post" novalidate>
+        <div class="two">
+          <div class="field">
+            <label for="first">First name</label>
+            <input id="first" name="first" type="text" autocomplete="given-name" required data-y />
+          </div>
+          <div class="field">
+            <label for="last">Last name</label>
+            <input id="last" name="last" type="text" autocomplete="family-name" required data-y />
+          </div>
+        </div>
+        <div class="two">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label for="phone">Phone <span class="opt">(optional)</span></label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="intention">What is your intention for our work together?</label>
+          <textarea id="intention" name="intention" required placeholder="A threshold you’re crossing, something to release, a protection, a prayer…" data-y></textarea>
+        </div>
+
+        <fieldset class="field">
+          <legend>Build a style language <span class="opt">Rate any themes you’d like to bring in</span></legend>
+          {themes.map((t) => (
+            <div class="rating">
+              <span>{t.label}<small>{t.hint}</small></span>
+              <div class="petals" role="radiogroup" aria-label={`${t.label}, rate 1 to 5`}>
+                {[5, 4, 3, 2, 1].map((n) => (
+                  <>
+                    <input type="radio" id={`${t.id}-${n}`} name={t.id} value={n} data-y />
+                    <label for={`${t.id}-${n}`} title={`${n} of 5`}><span class="sr-only">{n} of 5</span><Icon name="petal" /></label>
+                  </>
+                ))}
+              </div>
+            </div>
+          ))}
+        </fieldset>
+
+        <div class="field">
+          <label for="message">Anything else? <span class="opt">(optional)</span></label>
+          <textarea id="message" name="message" placeholder="Placement, size, timing, references, questions…" style="min-height:100px"></textarea>
+        </div>
+
+        <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" style="display:none" aria-hidden="true" />
+        <div class="form-status" data-status role="status" aria-live="polite"></div>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <button class="btn" type="submit" data-submit>Send my intention <Icon name="arrow" /></button>
+          <span style="font-size:.85rem;color:var(--text-light-muted)">Or call <a href={site.contact.phoneHref}>{site.contact.phone}</a></span>
+        </div>
+      </form>
+
+      <aside class="yantra-card reveal" style="--d:.15s" aria-label="Your yantra sketch">
+        <h2>Your yantra, unfolding</h2>
+        <p style="margin:0 0 14px">It grows as you write and rate.</p>
+        <svg id="yantra" viewBox="0 0 400 400" role="img" aria-label="An abstract geometric sketch that changes with your answers">
+          <defs>
+            <radialGradient id="bindu"><stop offset="0" stop-color="#fff2c4" /><stop offset=".4" stop-color="#ff6a3d" /><stop offset="1" stop-color="#d7322a" stop-opacity="0" /></radialGradient>
+          </defs>
+          <g data-layer="bhupura"></g>
+          <g data-layer="circles"></g>
+          <g data-layer="petals2"></g>
+          <g data-layer="petals"></g>
+          <g data-layer="wave"></g>
+          <g data-layer="tri"></g>
+          <g data-layer="dots"></g>
+          <circle data-layer="bindu" cx="200" cy="200" r="10" fill="url(#bindu)" />
+        </svg>
+        <p>A playful sketch of the energies you’re bringing. The real design is drawn together, in person.</p>
+        <button class="btn btn--ghost" type="button" data-save style="margin-top:14px;color:var(--gold-soft);font-size:.75rem">Save sketch</button>
+        <ul class="check-list" style="text-align:left">
+          <li>We reply personally, usually within a few days.</li>
+          <li>Next comes a consultation to listen for the design together.</li>
+          <li>Until then: reflect, meditate, and notice what arises.</li>
+        </ul>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { toast } from '../scripts/delight';
+  const NS = 'http://www.w3.org/2000/svg';
+  const form = document.querySelector<HTMLFormElement>('[data-journey]')!;
+  const svg = document.getElementById('yantra')!;
+  const layer = (n: string) => svg.querySelector<SVGGElement>(`[data-layer="${n}"]`)!;
+  const C = 200;
+  const crimson = '#d7322a', gold = '#c9a24a', soft = '#e6cf96';
+
+  const el = (tag: string, attrs: Record<string, string | number>) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, String(attrs[k]));
+    return e;
+  };
+  const hash = (s: string) => {
+    let h = 2166136261;
+    for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    return (h >>> 0) / 4294967295;
+  };
+  const rating = (n: string) => Number((form.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value) ?? 0);
+  const petal = (r0: number, r1: number, a: number, w: number) => {
+    const p = (r: number, ang: number) => `${C + r * Math.cos(ang)},${C + r * Math.sin(ang)}`;
+    const mid = (r0 + r1) / 2;
+    return `M${p(r0, a - w)} Q${p(mid * 1.15, a - w * 0.9)} ${p(r1, a)} Q${p(mid * 1.15, a + w * 0.9)} ${p(r0, a + w)} Z`;
+  };
+
+  function draw() {
+    const name = `${(form.first as HTMLInputElement).value} ${(form.last as HTMLInputElement).value}`.trim();
+    const intent = (form.intention as HTMLTextAreaElement).value.trim();
+    const seed = hash(name || 'sat manav');
+    const geo = rating('geometric'), abs = rating('abstract'), east = rating('eastern');
+    const rot = seed * 360;
+
+    // Bhupura: the square "earth city" with four gates (Eastern traditional)
+    const b = layer('bhupura'); b.replaceChildren();
+    if (east > 0) {
+      const s = 176, g = 26, d = 14;
+      const path = [`M${C - s},${C - s}`, `H${C - g}`, `v${-d}`, `h${2 * g}`, `v${d}`, `H${C + s}`, `V${C - g}`, `h${d}`, `v${2 * g}`, `h${-d}`, `V${C + s}`, `H${C + g}`, `v${d}`, `h${-2 * g}`, `v${-d}`, `H${C - s}`, `V${C + g}`, `h${-d}`, `v${-2 * g}`, `h${d}`, 'Z'].join(' ');
+      b.append(el('path', { d: path, fill: 'none', stroke: gold, 'stroke-width': 1.2, opacity: 0.25 + east * 0.13 }));
+      if (east >= 3) b.append(el('path', { d: path, fill: 'none', stroke: gold, 'stroke-width': .6, opacity: .4, transform: `translate(${C} ${C}) scale(.94) translate(${-C} ${-C})` }));
+    }
+
+    // Circles
+    const c = layer('circles'); c.replaceChildren();
+    [150, 142].forEach((r, i) => c.append(el('circle', { cx: C, cy: C, r, fill: 'none', stroke: i ? crimson : gold, 'stroke-width': i ? .8 : 1.2, opacity: .7 })));
+
+    // Lotus petals (Eastern + length of intention)
+    const pl = layer('petals'); pl.replaceChildren();
+    const pl2 = layer('petals2'); pl2.replaceChildren();
+    const n1 = 8 + Math.min(8, Math.floor(intent.length / 30)) + east;
+    for (let i = 0; i < n1; i++) {
+      const a = (i / n1) * Math.PI * 2 + (rot * Math.PI) / 180;
+      pl.append(el('path', { d: petal(96, 140, a, Math.PI / n1 * .92), fill: 'rgba(215,50,42,.08)', stroke: crimson, 'stroke-width': 1 }));
+    }
+    if (east >= 2 || intent.length > 80) {
+      const n2 = n1 * 2;
+      for (let i = 0; i < n2; i++) {
+        const a = (i / n2) * Math.PI * 2 + (rot * Math.PI) / 180 + Math.PI / n2;
+        pl2.append(el('path', { d: petal(118, 150, a, Math.PI / n2 * .9), fill: 'none', stroke: gold, 'stroke-width': .7, opacity: .7 }));
+      }
+    }
+
+    // Organic wave (Abstract)
+    const w = layer('wave'); w.replaceChildren();
+    if (abs > 0) {
+      for (let k = 0; k < Math.ceil(abs / 2); k++) {
+        const pts: string[] = [];
+        const lobes = 5 + Math.floor(seed * 5) + k;
+        for (let i = 0; i <= 120; i++) {
+          const a = (i / 120) * Math.PI * 2;
+          const r = 86 - k * 9 + Math.sin(a * lobes + seed * 10 + k) * (3 + abs * 2.6) + Math.cos(a * 3 + k) * abs;
+          pts.push(`${(C + r * Math.cos(a)).toFixed(1)},${(C + r * Math.sin(a)).toFixed(1)}`);
+        }
+        w.append(el('polygon', { points: pts.join(' '), fill: 'none', stroke: k % 2 ? gold : soft, 'stroke-width': 1, opacity: .55 }));
+      }
+    }
+
+    // Interlocking triangles (Geometric)
+    const t = layer('tri'); t.replaceChildren();
+    const nt = Math.max(1, geo + (geo ? 1 : 0));
+    for (let i = 0; i < nt; i++) {
+      const r = 80 - i * (60 / (nt + 1));
+      const up = i % 2 === 0;
+      const pts = [0, 1, 2].map((k) => {
+        const a = (k / 3) * Math.PI * 2 + (up ? -Math.PI / 2 : Math.PI / 2);
+        return `${(C + r * Math.cos(a)).toFixed(1)},${(C + r * Math.sin(a)).toFixed(1)}`;
+      });
+      t.append(el('polygon', { points: pts.join(' '), fill: up ? 'rgba(215,50,42,.06)' : 'none', stroke: up ? crimson : gold, 'stroke-width': 1.1, opacity: geo ? .95 : .35 }));
+    }
+
+    // Dot ring: one bead per word of intention (max 54, half a mala)
+    const dl = layer('dots'); dl.replaceChildren();
+    const words = Math.min(54, intent ? intent.split(/\s+/).length : 0);
+    for (let i = 0; i < words; i++) {
+      const a = (i / 54) * Math.PI * 2 - Math.PI / 2;
+      dl.append(el('circle', { cx: (C + 160 * Math.cos(a)).toFixed(1), cy: (C + 160 * Math.sin(a)).toFixed(1), r: 2, fill: crimson }));
+    }
+
+    svg.querySelector('[data-layer="bindu"]')!.setAttribute('r', String(8 + Math.min(14, intent.length / 25) + (geo + abs + east) / 2));
+  }
+
+  form.addEventListener('input', draw);
+  form.addEventListener('change', draw);
+  draw();
+
+  document.querySelector('[data-save]')?.addEventListener('click', () => {
+    const clone = svg.cloneNode(true) as SVGElement;
+    clone.setAttribute('xmlns', NS);
+    const bg = el('rect', { width: 400, height: 400, fill: '#0b0303' });
+    clone.insertBefore(bg, clone.firstChild);
+    const url = URL.createObjectURL(new Blob([clone.outerHTML], { type: 'image/svg+xml' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'my-sat-manav-yantra.svg' });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Saved. Bring it along to your consultation if you like.');
+  });
+
+  // Submission: POST to the configured endpoint, or fall back to a pre-filled email.
+  const status = document.querySelector<HTMLElement>('[data-status]')!;
+  const say = (msg: string) => { status.textContent = msg; status.classList.add('show'); };
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const required = [...form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('[required]')];
+    const missing = required.find((f) => !f.value.trim() || (f.type === 'email' && !/^\S+@\S+\.\S+$/.test(f.value)));
+    if (missing) {
+      missing.focus();
+      say(missing.type === 'email' ? 'Please add a valid email so we can reply.' : 'Please fill in your name, email and intention.');
+      return;
+    }
+    const data = Object.fromEntries(new FormData(form) as any) as Record<string, string>;
+    if (data._gotcha) return;
+    const endpoint = form.getAttribute('action');
+    const btn = form.querySelector<HTMLButtonElement>('[data-submit]')!;
+    if (endpoint) {
+      btn.disabled = true;
+      try {
+        const res = await fetch(endpoint, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        if (!res.ok) throw new Error(String(res.status));
+        say(`Thank you, ${data.first}. Your intention has been received. Shug will be in touch soon. Om shanti.`);
+        toast('Intention received 🙏');
+        form.querySelectorAll('input:not([type=radio]), textarea').forEach((f) => ((f as HTMLInputElement).value = ''));
+        return;
+      } catch {
+        say('Something went wrong sending the form. Opening an email instead…');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    const lines = [
+      `Name: ${data.first} ${data.last}`,
+      `Email: ${data.email}`,
+      data.phone && `Phone: ${data.phone}`,
+      '',
+      'Intention:',
+      data.intention,
+      '',
+      `Style language (1–5): Geometric ${data.geometric ?? '–'} · Abstract ${data.abstract ?? '–'} · Eastern traditional ${data.eastern ?? '–'}`,
+      data.message && `\nAnything else:\n${data.message}`,
+    ].filter((l) => typeof l === 'string');
+    window.location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(`Journey: ${data.first} ${data.last}`)}&body=${encodeURIComponent(lines.join('\n'))}`;
+    say('Your email app should open with everything filled in. Just press send.');
+  });
+</script>

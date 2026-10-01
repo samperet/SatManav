@@ -1,0 +1,15 @@
+---
+import type { Product } from '../data/site';
+interface Props { product: Product; delay?: number; }
+const { product: p, delay = 0 } = Astro.props;
+---
+<a class="product reveal" href={`/shop/${p.slug}`} style={`--d:${delay}s`}>
+  <div class="product__img">
+    <img src={p.images[0].src} alt={p.images[0].alt} loading="lazy" width="400" height="500" />
+    <span class="tag">{p.kind}</span>
+  </div>
+  <div class="row">
+    <h3>{p.name}</h3>
+    <span class="price">${p.price.toFixed(2)}</span>
+  </div>
+</a>

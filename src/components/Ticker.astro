@@ -1,0 +1,13 @@
+---
+import { site } from '../data/site';
+const words = Array.from({ length: 6 }, (_, i) => (i % 3 === 1 ? `Jaya ${site.mantra}` : site.mantra));
+---
+<div class="ticker" data-ticker aria-label={`Mantra: ${site.mantra}`} role="marquee">
+  <div class="ticker__track" aria-hidden="true">
+    {[0, 1].map(() => (
+      <div class="ticker__item">
+        {words.map((w) => (<><span>{w}</span><b>ॐ</b></>))}
+      </div>
+    ))}
+  </div>
+</div>

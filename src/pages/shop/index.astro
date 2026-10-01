@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { products } from '../../data/site';
+const prints = products.filter((p) => p.kind === 'Art print');
+const care = products.filter((p) => p.kind === 'Aftercare');
+---
+<Base title="Shop" description="Original art prints by Shug and Sat Manav aftercare: tattoo salve and Surya sunscreen, made in Maine." solidHeader>
+  <section class="page-head dark">
+    <div class="tanka"></div>
+    <div class="wrap reveal">
+      <span class="eyebrow">Sat Manav store</span>
+      <h1 class="h2">Sacred art &amp; aftercare</h1>
+      <p class="lead">Original artwork to live with, and the same care Shug sends home with every client.</p>
+    </div>
+  </section>
+  <section class="section paper">
+    <div class="wrap">
+      <h2 class="title reveal" style="font-size:1.6rem;color:var(--maroon-2);margin-bottom:22px">Art prints</h2>
+      <div class="products" style="margin-bottom:64px">
+        {prints.map((p, i) => <ProductCard product={p} delay={i * 0.08} />)}
+      </div>
+      <h2 class="title reveal" style="font-size:1.6rem;color:var(--maroon-2);margin-bottom:22px">Aftercare</h2>
+      <div class="products">
+        {care.map((p, i) => <ProductCard product={p} delay={i * 0.08} />)}
+      </div>
+    </div>
+  </section>
+</Base>
