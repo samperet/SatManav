@@ -143,15 +143,6 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .quote p { font-size: .95rem; color: var(--text-dark); }
 .quote cite { font-style: normal; font-family: var(--f-title); color: var(--blood); letter-spacing: .12em; text-transform: uppercase; font-size: .8rem; }
 
-/* Products */
-.products { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
-.product { text-decoration: none; display: grid; gap: 8px; align-content: start; }
-.product__img { aspect-ratio: 4 / 5; border-radius: var(--radius); overflow: hidden; background: #ddd0b2; }
-.product__img img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease); }
-.product:hover .product__img img { transform: scale(1.04); }
-.product h3 { font-family: var(--f-title); font-weight: 600; font-size: 1.1rem; color: var(--maroon-2); margin-top: 6px; }
-.product .price { font-family: var(--f-title); color: var(--blood); }
-
 /* Offerings */
 .offerings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
 .offer { padding: 26px 22px; border-radius: var(--radius); border: 1px solid rgba(201,162,74,.18); background: linear-gradient(180deg, rgba(90,11,7,.35), rgba(11,3,3,.2)); }
@@ -174,23 +165,6 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 .page-head .h2 { font-size: clamp(2.4rem, 5vw + .5rem, 4.4rem); position: relative; }
 .page-head .tanka { position: absolute; inset: 0; background: url('/images/brand/tanka.webp') center/cover; opacity: .14; }
 
-/* Product page */
-.pdp { display: grid; grid-template-columns: 1.1fr .9fr; gap: clamp(28px, 5vw, 70px); align-items: start; }
-.pdp__main { border-radius: var(--radius); overflow: hidden; background: #ddd0b2; aspect-ratio: 4/5; }
-.pdp__main img { width: 100%; height: 100%; object-fit: cover; }
-.thumbs { display: flex; gap: 10px; margin-top: 12px; }
-.thumbs button { width: 74px; aspect-ratio: 1; padding: 0; border-radius: 8px; overflow: hidden; border: 2px solid transparent; cursor: pointer; background: none; }
-.thumbs button[aria-current='true'] { border-color: var(--crimson); }
-.thumbs img { width: 100%; height: 100%; object-fit: cover; }
-.pdp h1 { font-family: var(--f-display); font-weight: 700; color: var(--crimson); font-size: clamp(2rem, 3.4vw, 3rem); }
-.pdp .price { font-family: var(--f-title); font-size: 1.6rem; color: var(--maroon-2); margin: 10px 0 18px; display: block; }
-.qty { display: inline-flex; align-items: center; border: 1px solid rgba(122,33,8,.3); border-radius: 999px; overflow: hidden; }
-.qty button { background: none; border: 0; width: 42px; height: 46px; cursor: pointer; font-size: 1.2rem; color: var(--maroon-2); }
-.qty output { min-width: 28px; text-align: center; font-family: var(--f-title); }
-.buy-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 24px; }
-.crumbs { font-family: var(--f-title); font-size: .85rem; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 26px; }
-.crumbs a { text-decoration: none; color: var(--blood); }
-
 /* Journey form */
 .form { display: grid; gap: 24px; }
 .field { display: grid; gap: 8px; border: 0; padding: 0; margin: 0; }
@@ -212,16 +186,15 @@ textarea { min-height: 130px; resize: vertical; }
 .form-status.show { display: block; background: rgba(201,162,74,.12); border: 1px solid rgba(201,162,74,.4); color: var(--gold-soft); }
 
 /* Responsive */
-@media (max-width: 1020px) { .products, .offerings { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 1020px) { .offerings { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 820px) {
-  .split, .split--rev, .pdp { grid-template-columns: 1fr; }
+  .split, .split--rev { grid-template-columns: 1fr; }
   .split--rev > img { order: 0; }
   .site-footer .cols { flex-direction: column; text-align: center; }
   .socials { justify-content: center; }
 }
 @media (max-width: 560px) {
   .offerings, .two { grid-template-columns: 1fr; }
-  .products { grid-template-columns: 1fr 1fr; gap: 14px; }
   .masonry { columns: 2; column-gap: 10px; }
   .tile { margin-bottom: 10px; }
   .teaching summary { grid-template-columns: 2.2rem 1fr auto; gap: 10px; padding: 20px 0; }

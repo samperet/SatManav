@@ -4,8 +4,9 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/product/:slug", "destination": "/shop/:slug", "permanent": true },
-    { "source": "/product/:slug/", "destination": "/shop/:slug", "permanent": true }
+    { "source": "/product/:slug", "destination": "/", "permanent": true },
+    { "source": "/product/:slug/", "destination": "/", "permanent": true },
+    { "source": "/shop", "destination": "/", "permanent": true }
   ],
   "headers": [
     {

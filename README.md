@@ -7,19 +7,17 @@ It keeps the original crimson, ink and parchment style, lotus emblem, mantra tic
 
 | Route | What it is |
 | --- | --- |
-| `/` | Hero, intro, artist, teachings (collapsible), gallery, store, testimonials, additional offerings |
+| `/` | Hero, intro, artist, teachings (collapsible), gallery, testimonials, additional offerings |
 | `/journey` | Intake form (intention + style ratings) |
 | `/gallery` | Full gallery with lightbox (keyboard + swipe) |
-| `/shop`, `/shop/[slug]` | Prints & aftercare with order-by-email or payment-link checkout |
 
-Old WooCommerce URLs (`/product/...`) redirect to `/shop/...` via `vercel.json`.
+Old shop URLs (`/shop`, `/product/...`) redirect to the homepage via `vercel.json`.
 
 ## Editing content
 
-Everything lives in **`src/data/site.ts`**: contact details, products and prices, gallery items, teachings, testimonials and offerings.
+Everything lives in **`src/data/site.ts`**: contact details, gallery items, teachings, testimonials and offerings.
 
 - **Gallery**: add `public/images/gallery/<slug>.webp` (≈1200px wide) and `<slug>-sm.webp` (≈520px wide), then add an entry to `gallery`.
-- **Instant checkout**: paste a Stripe/Square payment link into a product's `checkoutUrl`. Without it, the button opens a pre-filled order email.
 - **Journey form delivery**: set `PUBLIC_FORM_ENDPOINT` in Vercel (e.g. a Formspree or Basin form URL) to receive submissions directly. Without it, the form opens a pre-filled email to the studio.
 
 ## Fonts

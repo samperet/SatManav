@@ -1,9 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
 import Ticker from '../components/Ticker.astro';
-import ProductCard from '../components/ProductCard.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
-import { intro, artist, teachings, testimonials, products, offerings, gallery } from '../data/site';
+import { intro, artist, teachings, testimonials, offerings, gallery } from '../data/site';
 
 const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 ---
@@ -68,18 +67,6 @@ const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'];
   </section>
 
   <section class="section paper">
-    <div class="wrap">
-      <div class="section-head center">
-        <h2 class="h2">Sat Manav Store</h2>
-        <p class="title" style="color:var(--blood);font-size:1.2rem;margin-top:8px">Sacred Art &amp; Merchandise for Purchase</p>
-      </div>
-      <div class="products">
-        {products.map((p) => <ProductCard product={p} />)}
-      </div>
-    </div>
-  </section>
-
-  <section class="section paper" style="padding-top:0">
     <div class="wrap">
       <div class="section-head center">
         <img src="/images/brand/om.webp" alt="" width="120" height="112" style="width:90px;margin:0 auto 18px" loading="lazy" />

@@ -27,7 +27,6 @@ export const site = {
 
 export const nav = [
   { href: '/gallery', label: 'Gallery' },
-  { href: '/shop', label: 'Shop' },
 ];
 
 export const intro = {
@@ -53,35 +52,6 @@ export const gallery: GalleryItem[] = [
   { slug: 'sanskrit-ribs', alt: 'Sanskrit script tattoo', w: 1105, h: 2048 },
   { slug: 'tiger-bodysuit', alt: 'Full colour side and sleeve', w: 1140, h: 2048 },
   { slug: 'serpent-sleeve', alt: 'Black-work sleeve', w: 956, h: 2048 },
-];
-
-export type Product = {
-  slug: string;
-  name: string;
-  price: number;
-  images: { src: string; alt: string }[];
-  // Paste a Stripe / Square payment link here to enable instant checkout.
-  checkoutUrl?: string;
-};
-
-export const products: Product[] = [
-  { slug: 'saraswati-and-dragon-print', name: 'Saraswati and Dragon', price: 120, images: [{ src: '/images/shop/saraswati.webp', alt: 'Saraswati and Dragon print' }] },
-  { slug: 'tiger-on-waterfall-print', name: 'Tiger on Waterfall – Print', price: 20, images: [{ src: '/images/shop/tiger-waterfall.webp', alt: 'Tiger on Waterfall print' }] },
-  {
-    slug: 'sat-manav-tattoo-salve', name: 'Sat Manav Tattoo Salve', price: 20,
-    images: [
-      { src: '/images/shop/salve-1.webp', alt: 'Sat Manav Tattoo Salve' },
-      { src: '/images/shop/salve-2.webp', alt: 'Sat Manav Tattoo Salve, open tin' },
-      { src: '/images/shop/salve-3.webp', alt: 'Sat Manav Tattoo Salve tins' },
-    ],
-  },
-  {
-    slug: 'surya-sunscreen', name: 'Surya Sunscreen', price: 25,
-    images: [
-      { src: '/images/shop/surya-1.webp', alt: 'Surya Sunscreen' },
-      { src: '/images/shop/surya-2.webp', alt: 'Surya Sunscreen with salve' },
-    ],
-  },
 ];
 
 export const teachings = [
