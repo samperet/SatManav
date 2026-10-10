@@ -16,18 +16,30 @@ const themes = [
 
   <section class="section dark ember-bg" style="padding-top:30px">
     <div class="wrap" style="max-width:720px">
-      <form class="form" data-journey data-email={site.contact.email} action={site.formEndpoint || undefined} method="post" novalidate>
-        <fieldset class="field">
-          <legend>Name *</legend>
-          <div class="two">
-            <div class="field"><input id="first" name="first" type="text" autocomplete="given-name" required aria-label="First" /><small>First</small></div>
-            <div class="field"><input id="last" name="last" type="text" autocomplete="family-name" required aria-label="Last" /><small>Last</small></div>
-          </div>
-        </fieldset>
+      <!-- Step 1: email only, so the lead is captured first -->
+      <form class="form" data-step1 novalidate>
         <div class="field">
           <label for="email">Email *</label>
-          <input id="email" name="email" type="email" autocomplete="email" required />
+          <div class="email-row">
+            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required />
+            <button class="btn" type="submit">Begin Your Spiritual Journey</button>
+          </div>
         </div>
+        <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <div class="form-status" role="status" aria-live="polite" data-status></div>
+      </form>
+
+      <!-- Step 2: everything else, revealed once we have an email -->
+      <form class="form" data-step2 hidden novalidate>
+        <p class="email-chip">Email: <strong data-email-echo></strong> <button type="button" class="linklike" data-change-email>Change</button></p>
+
+        <fieldset class="field">
+          <legend>Name</legend>
+          <div class="two">
+            <div class="field"><input id="first" name="first" type="text" autocomplete="given-name" aria-label="First" /><small>First</small></div>
+            <div class="field"><input id="last" name="last" type="text" autocomplete="family-name" aria-label="Last" /><small>Last</small></div>
+          </div>
+        </fieldset>
         <div class="field">
           <label for="phone">Phone</label>
           <input id="phone" name="phone" type="tel" autocomplete="tel" />
@@ -55,60 +67,189 @@ const themes = [
         </fieldset>
 
         <div class="field">
+          <label for="photos">Inspirational photos</label>
+          <label class="dropzone" for="photos" data-dropzone>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l4.5-4.5a2 2 0 012.8 0L16 16m-2-2 1.5-1.5a2 2 0 012.8 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            <span>Drop images here or <u>browse</u></span>
+            <small>Up to 8 images</small>
+          </label>
+          <input id="photos" type="file" accept="image/*" multiple class="sr-only" data-photos />
+          <ul class="thumbs-grid" data-thumbs></ul>
+        </div>
+
+        <div class="field">
           <label for="message">Anything else you want to add?</label>
           <small>Keep in mind that we will have time to discuss in person, and go on a journey together. This form is simply a place to start.</small>
           <textarea id="message" name="message" aria-label="Message" placeholder="Message"></textarea>
         </div>
 
-        <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" style="display:none" aria-hidden="true" />
-        <div class="form-status" data-status role="status" aria-live="polite"></div>
+        <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <div class="form-status" role="status" aria-live="polite" data-status></div>
         <div><button class="btn" type="submit" data-submit>Submit</button></div>
       </form>
+
+      <div class="form-done" data-done hidden tabindex="-1">
+        <h2 class="h2">Thank you.</h2>
+        <p><a class="link-arrow" href="/">Home</a></p>
+      </div>
+
+      <p class="fallback">{site.contact.phone} · <a href={`mailto:${site.contact.email}`}>{site.contact.email}</a></p>
     </div>
   </section>
 </Base>
 
 <script>
-  const form = document.querySelector<HTMLFormElement>('[data-journey]')!;
-  const status = document.querySelector<HTMLElement>('[data-status]')!;
-  const say = (msg: string) => { status.textContent = msg; status.classList.add('show'); };
-  form.addEventListener('submit', async (e) => {
+  const MAX_PHOTOS = 8;
+  const BUDGET = 3.8 * 1024 * 1024; // stay under Vercel's 4.5 MB request limit
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const KEY = 'sm-journey-email';
+
+  const step1 = document.querySelector<HTMLFormElement>('[data-step1]')!;
+  const step2 = document.querySelector<HTMLFormElement>('[data-step2]')!;
+  const done = document.querySelector<HTMLElement>('[data-done]')!;
+  const echo = document.querySelector<HTMLElement>('[data-email-echo]')!;
+  const emailInput = step1.querySelector<HTMLInputElement>('#email')!;
+  const fileInput = document.querySelector<HTMLInputElement>('[data-photos]')!;
+  const thumbs = document.querySelector<HTMLUListElement>('[data-thumbs]')!;
+  const dropzone = document.querySelector<HTMLElement>('[data-dropzone]')!;
+  let email = '';
+  let photos: { file: File; url: string }[] = [];
+
+  const say = (form: HTMLElement, msg: string) => {
+    const s = form.querySelector<HTMLElement>('[data-status]')!;
+    s.textContent = msg;
+    s.classList.toggle('show', !!msg);
+  };
+  const store = (v: string | null) => { try { v ? sessionStorage.setItem(KEY, v) : sessionStorage.removeItem(KEY); } catch {} };
+
+  const showStep2 = (focus = true) => {
+    echo.textContent = email;
+    step1.hidden = true;
+    step2.hidden = false;
+    if (focus) step2.querySelector<HTMLInputElement>('#first')!.focus();
+  };
+
+  async function post(data: FormData) {
+    const res = await fetch('/api/lead', { method: 'POST', body: data });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.ok) throw new Error(body.error || String(res.status));
+  }
+
+  // Resume step 2 after a refresh in the same tab
+  try {
+    const saved = sessionStorage.getItem(KEY);
+    if (saved) { email = saved; showStep2(false); }
+  } catch {}
+
+  step1.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const missing = [...form.querySelectorAll<HTMLInputElement>('[required]')].find(
-      (f) => !f.value.trim() || (f.type === 'email' && !/^\S+@\S+\.\S+$/.test(f.value)),
+    const value = emailInput.value.trim();
+    if (!EMAIL_RE.test(value)) { say(step1, 'Please enter a valid email.'); emailInput.focus(); return; }
+    const btn = step1.querySelector<HTMLButtonElement>('button[type=submit]')!;
+    btn.disabled = true;
+    say(step1, '');
+    try {
+      const data = new FormData(step1);
+      data.set('stage', 'email');
+      await post(data);
+      email = value;
+      store(email);
+      showStep2();
+    } catch {
+      say(step1, 'Something went wrong. Please try again, or email us directly below.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.querySelector('[data-change-email]')!.addEventListener('click', () => {
+    store(null);
+    step2.hidden = true;
+    step1.hidden = false;
+    emailInput.value = email;
+    emailInput.focus();
+  });
+
+  /* ---------- Photos: preview, remove, shrink before upload ---------- */
+  function addFiles(list: FileList | File[]) {
+    const images = [...list].filter((f) => f.type.startsWith('image/'));
+    const room = MAX_PHOTOS - photos.length;
+    if (images.length > room) say(step2, `Up to ${MAX_PHOTOS} images.`);
+    else say(step2, '');
+    images.slice(0, Math.max(0, room)).forEach((file) => photos.push({ file, url: URL.createObjectURL(file) }));
+    render();
+  }
+  function render() {
+    thumbs.replaceChildren(
+      ...photos.map((p, i) => {
+        const li = document.createElement('li');
+        const img = document.createElement('img');
+        img.src = p.url;
+        img.alt = p.file.name;
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.textContent = '×';
+        rm.setAttribute('aria-label', `Remove ${p.file.name}`);
+        rm.addEventListener('click', () => {
+          URL.revokeObjectURL(p.url);
+          photos.splice(i, 1);
+          render();
+        });
+        li.append(img, rm);
+        return li;
+      }),
     );
-    if (missing) {
-      missing.focus();
-      say('This field is required.');
-      return;
+    dropzone.classList.toggle('full', photos.length >= MAX_PHOTOS);
+  }
+  fileInput.addEventListener('change', () => { if (fileInput.files) addFiles(fileInput.files); fileInput.value = ''; });
+  ['dragenter', 'dragover'].forEach((t) => dropzone.addEventListener(t, (e) => { e.preventDefault(); dropzone.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => dropzone.addEventListener(t, () => dropzone.classList.remove('over')));
+  dropzone.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer?.files) addFiles(e.dataTransfer.files); });
+
+  async function shrink(file: File, maxSide: number, quality: number): Promise<Blob> {
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bmp.width * scale);
+      canvas.height = Math.round(bmp.height * scale);
+      canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      bmp.close();
+      return await new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail()), 'image/jpeg', quality));
+    } catch {
+      return file; // formats the browser can't decode are sent as-is
     }
-    const data = Object.fromEntries(new FormData(form) as any) as Record<string, string>;
-    if (data._gotcha) return;
-    const endpoint = form.getAttribute('action');
-    if (endpoint) {
-      try {
-        const res = await fetch(endpoint, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-        if (!res.ok) throw new Error(String(res.status));
-        say('Thank you.');
-        form.reset();
-        return;
-      } catch {
-        /* fall through to email */
-      }
+  }
+  async function packPhotos(): Promise<{ blob: Blob; name: string }[]> {
+    for (const [side, q] of [[1800, 0.82], [1400, 0.75], [1000, 0.7], [800, 0.6]] as const) {
+      const out = await Promise.all(photos.map(async (p) => ({ blob: await shrink(p.file, side, q), name: p.file.name.replace(/\.\w+$/, '') + '.jpg' })));
+      if (out.reduce((n, o) => n + o.blob.size, 0) <= BUDGET) return out;
     }
-    const body = [
-      `Name: ${data.first} ${data.last}`,
-      `Email: ${data.email}`,
-      `Phone: ${data.phone ?? ''}`,
-      '',
-      `What is your intention for our work together?\n${data.intention ?? ''}`,
-      '',
-      `Geometric: ${data.geometric ?? '-'} / 5`,
-      `Abstract: ${data.abstract ?? '-'} / 5`,
-      `Eastern Traditional: ${data.eastern ?? '-'} / 5`,
-      '',
-      `Anything else you want to add?\n${data.message ?? ''}`,
-    ].join('\n');
-    window.location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(`Journey: ${data.first} ${data.last}`)}&body=${encodeURIComponent(body)}`;
+    throw new Error('photos_too_large');
+  }
+
+  step2.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = step2.querySelector<HTMLButtonElement>('[data-submit]')!;
+    btn.disabled = true;
+    say(step2, photos.length ? 'Uploading…' : '');
+    try {
+      const data = new FormData(step2);
+      data.set('stage', 'details');
+      data.set('email', email);
+      for (const p of await packPhotos()) data.append('photos', p.blob, p.name);
+      await post(data);
+      store(null);
+      photos.forEach((p) => URL.revokeObjectURL(p.url));
+      step2.hidden = true;
+      done.hidden = false;
+      done.focus();
+    } catch (err) {
+      say(step2, (err as Error).message.includes('photos_too_large')
+        ? 'Those images are too large together. Please remove one or two and try again.'
+        : 'Something went wrong. Please try again, or email us directly below.');
+    } finally {
+      btn.disabled = false;
+    }
   });
 </script>

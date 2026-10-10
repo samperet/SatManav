@@ -8,7 +8,8 @@ It keeps the original crimson, ink and parchment style, lotus emblem, mantra tic
 | Route | What it is |
 | --- | --- |
 | `/` | Hero, intro, artist, teachings (collapsible), gallery, testimonials, additional offerings |
-| `/journey` | Intake form (intention + style ratings) |
+| `/journey` | Two-step lead form: email first, then details + inspirational photos |
+| `/api/lead` | Serverless function that emails each submission to Shug |
 | `/gallery` | Full gallery with lightbox (keyboard + swipe) |
 
 Old shop URLs (`/shop`, `/product/...`) redirect to the homepage via `vercel.json`.
@@ -18,7 +19,25 @@ Old shop URLs (`/shop`, `/product/...`) redirect to the homepage via `vercel.jso
 Everything lives in **`src/data/site.ts`**: contact details, gallery items, teachings, testimonials and offerings.
 
 - **Gallery**: add `public/images/gallery/<slug>.webp` (≈1200px wide) and `<slug>-sm.webp` (≈520px wide), then add an entry to `gallery`.
-- **Journey form delivery**: set `PUBLIC_FORM_ENDPOINT` in Vercel (e.g. a Formspree or Basin form URL) to receive submissions directly. Without it, the form opens a pre-filled email to the studio.
+
+## Journey form & lead emails
+
+The form captures leads in two steps:
+
+1. **Email only.** As soon as a visitor enters their email, Shug gets a `New lead: …` email, so the contact is captured even if they stop there.
+2. **Details.** The rest of the form appears: name, phone, intention, style ratings, message and up to 8 inspirational photos. Submitting sends a `Journey details: …` email with the photos attached.
+
+Both emails go to `satmanavyogi@gmail.com` with **Reply-To set to the visitor**, so hitting Reply answers them directly. Photos are resized in the browser before upload to stay within Vercel's 4.5 MB request limit.
+
+Emails are sent with [Resend](https://resend.com). Set these in Vercel → Project → Settings → Environment Variables:
+
+| Variable | Value |
+| --- | --- |
+| `RESEND_API_KEY` | API key from resend.com (required) |
+| `LEAD_TO_EMAIL` | Optional; defaults to `satmanavyogi@gmail.com` |
+| `LEAD_FROM_EMAIL` | Optional; defaults to `Sat Manav Website <onboarding@resend.dev>` |
+
+Resend's test sender (`onboarding@resend.dev`) can only deliver to the email address that owns the Resend account, so **create the Resend account with satmanavyogi@gmail.com**. For a branded sender, verify `satmanavyogitattoos.com` in Resend and set `LEAD_FROM_EMAIL` to e.g. `Sat Manav Tattoos <journey@satmanavyogitattoos.com>`.
 
 ## Fonts
 

@@ -20,9 +20,6 @@ export const site = {
     instagram: 'https://www.instagram.com/satmanavyogi_tattoo/',
     facebook: 'https://www.facebook.com/satmanavyogitattoos',
   },
-  // Optional: set PUBLIC_FORM_ENDPOINT in Vercel (e.g. a Formspree URL) to receive Journey
-  // submissions directly. Without it, the form opens a pre-filled email instead.
-  formEndpoint: import.meta.env.PUBLIC_FORM_ENDPOINT ?? '',
 };
 
 export const nav = [
