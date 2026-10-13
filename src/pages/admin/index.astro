@@ -1,0 +1,422 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import Columns from '../../components/admin/Columns.astro';
+import type { Point } from '../../components/admin/chart-types';
+import Ranked from '../../components/admin/Ranked.astro';
+import { isAdmin, SESSION_COOKIE } from '../../lib/server/auth';
+import { db, PHOTO_BUCKET } from '../../lib/server/supabase';
+
+export const prerender = false;
+
+if (!(await isAdmin(Astro.cookies.get(SESSION_COOKIE)?.value))) return Astro.redirect('/admin/login');
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const RANGES = [
+  { days: 7, label: 'Last 7 days' },
+  { days: 30, label: 'Last 30 days' },
+  { days: 90, label: 'Last 90 days' },
+  { days: 365, label: 'Last 12 months' },
+];
+const days = RANGES.some((r) => r.days === Number(Astro.url.searchParams.get('days'))) ? Number(Astro.url.searchParams.get('days')) : 30;
+const TZ = 'America/New_York';
+
+type Row = { name: string; [k: string]: string | number };
+type Stats = {
+  since: string;
+  totals: { visitors: number; pageviews: number; visits: number; leads: number; completed: number };
+  previous: { visitors: number; pageviews: number; leads: number; completed: number };
+  daily: { day: string; visitors: number; pageviews: number; leads_email: number; leads_details: number }[];
+  sources: { source: string; visits: number; visitors: number; leads: number; completed: number }[];
+  referrers: Row[]; campaigns: Row[]; pages: Row[]; landing: Row[]; countries: Row[]; cities: Row[]; devices: Row[]; browsers: Row[];
+};
+type Lead = {
+  id: string; created_at: string; email: string; stage: 'email' | 'details'; status: string;
+  first_name: string | null; last_name: string | null; phone: string | null; intention: string | null;
+  geometric: number | null; abstract: number | null; eastern: number | null; message: string | null; photos: string[];
+  source: string | null; medium: string | null; referrer_host: string | null; landing_path: string | null; utm_campaign: string | null;
+  city: string | null; region: string | null; country: string | null; device: string | null;
+};
+
+type Testimonial = { id: string; created_at: string; name: string; email: string | null; body: string; consent: boolean; status: 'pending' | 'approved' | 'rejected' };
+
+const client = db();
+let testimonials: Testimonial[] = [];
+let stats: Stats | null = null;
+let leads: Lead[] = [];
+let photoUrls = new Map<string, string>();
+let loadError = '';
+
+if (client) {
+  // The moderation queue is not limited by the date range: pending items must never hide.
+  const tq = await client.from('testimonials').select('*').order('created_at', { ascending: false }).limit(300);
+  testimonials = (tq.data ?? []) as Testimonial[];
+  const { data, error } = await client.rpc('admin_stats', { p_days: days, p_tz: TZ });
+  if (error) loadError = error.message;
+  else {
+    stats = data as Stats;
+    const res = await client.from('leads').select('*').gte('created_at', stats.since).order('created_at', { ascending: false }).limit(500);
+    if (res.error) loadError = res.error.message;
+    leads = (res.data ?? []) as Lead[];
+    const paths = leads.flatMap((l) => l.photos ?? []);
+    if (paths.length) {
+      const signed = await client.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 60 * 60);
+      for (const s of signed.data ?? []) if (s.signedUrl && s.path) photoUrls.set(s.path, s.signedUrl);
+    }
+  }
+}
+
+// ---------- formatting ----------
+const num = (n: number) => n.toLocaleString('en-US');
+const pct = (a: number, b: number) => {
+  if (!(b > 0)) return '–';
+  const r = (a / b) * 100;
+  return r.toFixed(r >= 10 || r === 0 ? 0 : 1) + '%';
+};
+const delta = (cur: number, prev: number) => {
+  if (!prev) return cur ? { text: 'new', dir: 'up' } : null;
+  const d = Math.round(((cur - prev) / prev) * 100);
+  return { text: `${d > 0 ? '+' : ''}${d}%`, dir: d > 0 ? 'up' : d < 0 ? 'down' : 'flat' };
+};
+const dayLabel = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const when = (iso: string) => new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const STATUS: Record<string, string> = { new: 'New', contacted: 'Contacted', booked: 'Booked', archived: 'Archived' };
+
+// Daily series (weekly buckets for the 12-month view so columns stay readable)
+function bucket(rows: Stats['daily'], pick: (r: Stats['daily'][number]) => number[]): Point[] {
+  if (days <= 90) return rows.map((r) => ({ label: dayLabel(r.day), values: pick(r) }));
+  const out: Point[] = [];
+  for (let i = 0; i < rows.length; i += 7) {
+    const chunk = rows.slice(i, i + 7);
+    const sums = chunk.map(pick).reduce((a, b) => a.map((v, k) => v + b[k]));
+    out.push({ label: `Week of ${dayLabel(chunk[0].day)}`, values: sums });
+  }
+  return out;
+}
+const visitorsPts = stats ? bucket(stats.daily, (r) => [r.visitors]) : [];
+const leadsPts = stats ? bucket(stats.daily, (r) => [r.leads_email, r.leads_details]) : [];
+const rows = (list: Row[] | undefined, key: string) => (list ?? []).map((r) => ({ name: String(r.name), value: Number(r[key]) }));
+const sourceMax = stats ? Math.max(1, ...stats.sources.map((s) => s.visits)) : 1;
+const t = stats?.totals;
+const p = stats?.previous;
+const kpis = t && p ? [
+  { label: 'Visitors', value: num(t.visitors), d: delta(t.visitors, p.visitors) },
+  { label: 'Page views', value: num(t.pageviews), d: delta(t.pageviews, p.pageviews) },
+  { label: 'Leads', value: num(t.leads), d: delta(t.leads, p.leads), sub: 'emails captured' },
+  { label: 'Completed journeys', value: num(t.completed), d: delta(t.completed, p.completed), sub: `${pct(t.completed, t.leads)} of leads` },
+  { label: 'Lead conversion', value: pct(t.leads, t.visitors), sub: 'leads ÷ visitors' },
+] : [];
+const rangeLabel = RANGES.find((r) => r.days === days)!.label.toLowerCase();
+const T_STATUS = [
+  { key: 'pending', label: 'Pending' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'rejected', label: 'Rejected' },
+] as const;
+const tCount = (k: string) => testimonials.filter((x) => x.status === k).length;
+const pendingCount = tCount('pending');
+---
+<Admin title="Dashboard" signedIn>
+  <div class="filters" role="group" aria-label="Date range">
+    {RANGES.map((r) => (
+      <a href={`/admin?days=${r.days}`} aria-current={r.days === days ? 'true' : undefined}>{r.label}</a>
+    ))}
+    <a class="a-btn a-btn--ghost" href={`/api/admin/leads.csv?days=${days}`} download>Export leads (CSV)</a>
+  </div>
+
+  {pendingCount > 0 && (
+    <a class="callout" href="#testimonials">{pendingCount} testimonial{pendingCount === 1 ? '' : 's'} awaiting approval →</a>
+  )}
+
+  {!client && (
+    <section class="card setup">
+      <h2>Finish setup</h2>
+      <p>The dashboard needs the database key. In Vercel → Project → Settings → Environment Variables, add <code>SUPABASE_SECRET_KEY</code> (Supabase → Project Settings → API Keys → secret key), then redeploy.</p>
+    </section>
+  )}
+  {loadError && <p class="a-error" role="alert">Could not load data: {loadError}</p>}
+
+  {stats && (
+    <>
+      <section class="kpis" aria-label="Summary">
+        {kpis.map((k) => (
+          <div class="kpi">
+            <span class="kpi__label">{k.label}</span>
+            <span class="kpi__value">{k.value}</span>
+            <span class="kpi__meta">
+              {k.d && <span class={`delta delta--${k.d.dir}`}>{k.d.dir === 'up' ? '▲' : k.d.dir === 'down' ? '▼' : '•'} {k.d.text}</span>}
+              {k.d && ' vs previous period'}
+              {!k.d && k.sub}
+              {k.d && k.sub && <><br />{k.sub}</>}
+            </span>
+          </div>
+        ))}
+      </section>
+
+      <section class="grid-2">
+        <div class="card"><Columns title="Visitors" series={[{ name: 'Visitors', color: 'var(--series-1)' }]} points={visitorsPts} /></div>
+        <div class="card"><Columns title="Leads" series={[{ name: 'Email only', color: 'var(--series-2)' }, { name: 'Completed', color: 'var(--series-3)' }]} points={leadsPts} /></div>
+      </section>
+
+      <section class="card">
+        <h2 class="card__title">Where traffic comes from</h2>
+        <p class="card__sub">Visits are arrivals from outside the site. Leads are credited to the source the visitor arrived from.</p>
+        {stats.sources.length === 0 ? <p class="empty">No visits yet</p> : (
+          <div class="table-wrap">
+            <table class="sources">
+              <thead><tr><th>Source</th><th class="w-bar">Visits</th><th class="num">Leads</th><th class="num">Completed</th><th class="num">Conversion</th></tr></thead>
+              <tbody>
+                {stats.sources.map((s) => (
+                  <tr>
+                    <td>{s.source}</td>
+                    <td class="w-bar"><span class="inline-bar" style={`width:${(s.visits / sourceMax) * 100}%`}></span><span class="num">{num(s.visits)}</span></td>
+                    <td class="num">{num(s.leads)}</td>
+                    <td class="num">{num(s.completed)}</td>
+                    <td class="num">{pct(s.leads, s.visits)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p class="hint">Tip: tag links you share with <code>?src=</code>, e.g. <code>satmanavyogitattoos.com/journey?src=instagram</code> for the Instagram bio, or <code>?src=card</code> on business cards. They show up here by name.</p>
+      </section>
+
+      <section class="grid-3">
+        <Ranked title="Referring sites" rows={rows(stats.referrers, 'visits')} unit="visits" />
+        <Ranked title="Landing pages" rows={rows(stats.landing, 'visits')} unit="visits" />
+        <Ranked title="Top pages" rows={rows(stats.pages, 'views')} unit="views" />
+        <Ranked title="Countries" rows={rows(stats.countries, 'visitors')} unit="visitors" />
+        <Ranked title="Cities" rows={rows(stats.cities, 'visitors')} unit="visitors" />
+        <Ranked title="Devices" rows={rows(stats.devices, 'visitors')} unit="visitors" />
+        <Ranked title="Browsers" rows={rows(stats.browsers, 'visitors')} unit="visitors" />
+        <Ranked title="Campaigns (utm_campaign)" rows={rows(stats.campaigns, 'visits')} unit="visits" />
+      </section>
+
+      <section class="card" id="leads">
+        <div class="leads-head">
+          <h2 class="card__title">Form responses <span class="count">{leads.length}</span></h2>
+          <div class="leads-tools">
+            <input type="search" placeholder="Search name, email, text…" aria-label="Search responses" data-lead-search />
+            <select aria-label="Filter by status" data-lead-filter>
+              <option value="">All statuses</option>
+              {Object.entries(STATUS).map(([v, l]) => <option value={v}>{l}</option>)}
+            </select>
+          </div>
+        </div>
+        {leads.length === 0 ? <p class="empty">No responses in the {rangeLabel}.</p> : (
+          <div class="leads">
+            {leads.map((l) => {
+              const name = [l.first_name, l.last_name].filter(Boolean).join(' ');
+              const where = [l.city, l.region, l.country].filter(Boolean).join(', ');
+              const ratings = ([['Geometric', l.geometric], ['Abstract', l.abstract], ['Eastern Traditional', l.eastern]] as const).filter(([, v]) => v);
+              const haystack = [name, l.email, l.phone, l.intention, l.message, l.source].filter(Boolean).join(' ').toLowerCase();
+              return (
+                <details class="lead" data-status={l.status} data-text={haystack}>
+                  <summary>
+                    <span class="lead__when">{when(l.created_at)}</span>
+                    <span class="lead__who"><strong>{name || l.email}</strong>{name && <small>{l.email}</small>}</span>
+                    <span class={`chip chip--${l.stage}`}>{l.stage === 'details' ? 'Completed' : 'Email only'}</span>
+                    <span class="lead__src">{l.source ?? 'Direct'}</span>
+                    <span class={`chip chip--status chip--${l.status}`} data-status-chip>{STATUS[l.status]}</span>
+                  </summary>
+                  <div class="lead__body">
+                    <dl>
+                      <dt>Email</dt><dd><a href={`mailto:${l.email}`}>{l.email}</a></dd>
+                      {l.phone && <><dt>Phone</dt><dd><a href={`tel:${l.phone}`}>{l.phone}</a></dd></>}
+                      {l.intention && <><dt>Intention</dt><dd class="pre">{l.intention}</dd></>}
+                      {ratings.length > 0 && <><dt>Style</dt><dd>{ratings.map(([k, v]) => <span class="rating-pill">{k} {v}/5</span>)}</dd></>}
+                      {l.message && <><dt>Anything else</dt><dd class="pre">{l.message}</dd></>}
+                      <dt>Source</dt><dd>{[l.source ?? 'Direct', l.medium, l.utm_campaign && `campaign: ${l.utm_campaign}`, l.referrer_host && `via ${l.referrer_host}`].filter(Boolean).join(' · ')}{l.landing_path && <small> · landed on {l.landing_path}</small>}</dd>
+                      {(where || l.device) && <><dt>Visitor</dt><dd>{[where, l.device].filter(Boolean).join(' · ')}</dd></>}
+                    </dl>
+                    {l.photos?.length > 0 && (
+                      <ul class="photos">
+                        {l.photos.map((path) => photoUrls.get(path) && (
+                          <li><a href={photoUrls.get(path)} target="_blank" rel="noopener"><img src={photoUrls.get(path)} alt="Inspirational photo" loading="lazy" /></a></li>
+                        ))}
+                      </ul>
+                    )}
+                    <div class="lead__actions">
+                      <a class="a-btn" href={`mailto:${l.email}?subject=${encodeURIComponent('Your Sat Manav journey')}`}>Reply by email</a>
+                      <label>Status
+                        <select data-lead-status={l.id}>
+                          {Object.entries(STATUS).map(([v, lab]) => <option value={v} selected={v === l.status}>{lab}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </>
+  )}
+  {client && (
+    <section class="card" id="testimonials">
+      <div class="leads-head">
+        <h2 class="card__title">Testimonials</h2>
+        <div class="tabs" role="tablist" aria-label="Testimonial status">
+          {T_STATUS.map((st, i) => (
+            <button type="button" role="tab" aria-selected={i === 0 ? 'true' : 'false'} data-t-tab={st.key}>
+              {st.label} <span class="count" data-t-count={st.key}>{tCount(st.key)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <p class="card__sub">Submitted from the Testimonials section of the homepage. Only approved ones appear on the site (within about a minute). You can tidy the wording before approving.</p>
+      {T_STATUS.map((st, i) => (
+        <div class="tlist" data-t-panel={st.key} hidden={i !== 0}>
+          {tCount(st.key) === 0 && <p class="empty">Nothing {st.label.toLowerCase()}.</p>}
+          {testimonials.filter((x) => x.status === st.key).map((x) => (
+            <article class="tcard" data-t-id={x.id}>
+              <div class="tcard__meta">
+                <span>{when(x.created_at)}</span>
+                {x.email && <a href={`mailto:${x.email}`}>{x.email}</a>}
+                <span>{x.consent ? 'Permission to publish: yes' : 'No permission to publish'}</span>
+              </div>
+              <label class="sr-only" for={`tn-${x.id}`}>Name</label>
+              <input class="tcard__name" id={`tn-${x.id}`} value={x.name} maxlength="80" data-t-name />
+              <label class="sr-only" for={`tb-${x.id}`}>Testimonial</label>
+              <textarea class="tcard__body" id={`tb-${x.id}`} rows="5" maxlength="3000" data-t-body>{x.body}</textarea>
+              <div class="tcard__actions">
+                {x.status !== 'approved' && <button type="button" class="a-btn" data-t-action="approve" disabled={!x.consent}>Approve &amp; publish</button>}
+                {x.status === 'approved' && <button type="button" class="a-btn" data-t-action="save">Save changes</button>}
+                {x.status === 'approved' && <button type="button" class="a-btn a-btn--ghost" data-t-action="unpublish">Unpublish</button>}
+                {x.status === 'pending' && <button type="button" class="a-btn a-btn--ghost" data-t-action="reject">Reject</button>}
+                <button type="button" class="a-btn a-btn--ghost a-btn--danger" data-t-action="delete">Delete</button>
+                <span class="tcard__msg" role="status" aria-live="polite"></span>
+              </div>
+            </article>
+          ))}
+        </div>
+      ))}
+    </section>
+  )}
+  <div class="tip" role="tooltip" hidden data-tip-el></div>
+</Admin>
+
+<script>
+  /* Column tooltips: hover or keyboard focus. Text is set with textContent. */
+  const tip = document.querySelector<HTMLElement>('[data-tip-el]')!;
+  const show = (col: HTMLElement, x: number, y: number) => {
+    const d = JSON.parse(col.dataset.tip!) as { t: string; r: [string, number, string][] };
+    const title = document.createElement('div');
+    title.className = 'tip__title';
+    title.textContent = d.t;
+    const rows = d.r.map(([name, v, color]) => {
+      const row = document.createElement('div');
+      row.className = 'tip__row';
+      const key = document.createElement('i');
+      key.style.background = color;
+      const val = document.createElement('strong');
+      val.textContent = String(v);
+      const lab = document.createElement('span');
+      lab.textContent = name;
+      row.append(key, val, lab);
+      return row;
+    });
+    tip.replaceChildren(title, ...rows);
+    tip.hidden = false;
+    const r = tip.getBoundingClientRect();
+    tip.style.left = `${Math.min(window.innerWidth - r.width - 8, Math.max(8, x - r.width / 2))}px`;
+    tip.style.top = `${Math.max(8, y - r.height - 12)}px`;
+    document.querySelectorAll('.col.is-hot').forEach((c) => c.classList.remove('is-hot'));
+    col.classList.add('is-hot');
+  };
+  const hide = () => {
+    tip.hidden = true;
+    document.querySelectorAll('.col.is-hot').forEach((c) => c.classList.remove('is-hot'));
+  };
+  document.querySelectorAll<HTMLElement>('.col').forEach((col) => {
+    col.addEventListener('pointermove', (e) => show(col, e.clientX, col.getBoundingClientRect().top));
+    col.addEventListener('pointerleave', hide);
+    col.addEventListener('focus', () => {
+      const r = col.getBoundingClientRect();
+      show(col, r.left + r.width / 2, r.top);
+    });
+    col.addEventListener('blur', hide);
+  });
+
+  /* Lead status changes save immediately */
+  document.querySelectorAll<HTMLSelectElement>('[data-lead-status]').forEach((sel) => {
+    let prev = sel.value;
+    sel.addEventListener('change', async () => {
+      sel.disabled = true;
+      const res = await fetch('/api/admin/lead-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: sel.dataset.leadStatus, status: sel.value }),
+      }).catch(() => null);
+      sel.disabled = false;
+      if (!res?.ok) {
+        sel.value = prev;
+        alert('Could not save the status. Please try again.');
+        return;
+      }
+      prev = sel.value;
+      const lead = sel.closest<HTMLElement>('.lead')!;
+      lead.dataset.status = sel.value;
+      const chip = lead.querySelector<HTMLElement>('[data-status-chip]')!;
+      chip.textContent = sel.selectedOptions[0].textContent;
+      chip.className = `chip chip--status chip--${sel.value}`;
+    });
+  });
+
+  /* Testimonial tabs */
+  const tabs = document.querySelectorAll<HTMLButtonElement>('[data-t-tab]');
+  tabs.forEach((tab) =>
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+      document.querySelectorAll<HTMLElement>('[data-t-panel]').forEach((p) => (p.hidden = p.dataset.tPanel !== tab.dataset.tTab));
+    }),
+  );
+
+  /* Testimonial moderation */
+  document.querySelectorAll<HTMLButtonElement>('[data-t-action]').forEach((btn) =>
+    btn.addEventListener('click', async () => {
+      const card = btn.closest<HTMLElement>('[data-t-id]')!;
+      const action = btn.dataset.tAction!;
+      if (action === 'delete' && !confirm('Delete this testimonial permanently?')) return;
+      const msg = card.querySelector<HTMLElement>('.tcard__msg')!;
+      card.querySelectorAll('button').forEach((b) => (b.disabled = true));
+      msg.textContent = 'Saving…';
+      const res = await fetch('/api/admin/testimonial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: card.dataset.tId,
+          action,
+          name: card.querySelector<HTMLInputElement>('[data-t-name]')!.value,
+          body: card.querySelector<HTMLTextAreaElement>('[data-t-body]')!.value,
+        }),
+      }).catch(() => null);
+      if (!res?.ok) {
+        msg.textContent = 'Could not save. Please try again.';
+        card.querySelectorAll('button').forEach((b) => (b.disabled = false));
+        return;
+      }
+      if (action === 'save') {
+        msg.textContent = 'Saved.';
+        card.querySelectorAll('button').forEach((b) => (b.disabled = false));
+        return;
+      }
+      // Status changed: reload to move the card to its new tab, keeping the position.
+      location.hash = 'testimonials';
+      location.reload();
+    }),
+  );
+
+  /* Search + status filter */
+  const search = document.querySelector<HTMLInputElement>('[data-lead-search]');
+  const filter = document.querySelector<HTMLSelectElement>('[data-lead-filter]');
+  const apply = () => {
+    const q = (search?.value ?? '').trim().toLowerCase();
+    const st = filter?.value ?? '';
+    document.querySelectorAll<HTMLElement>('.lead').forEach((l) => {
+      l.hidden = (q !== '' && !l.dataset.text!.includes(q)) || (st !== '' && l.dataset.status !== st);
+    });
+  };
+  search?.addEventListener('input', apply);
+  filter?.addEventListener('change', apply);
+</script>

@@ -1,0 +1,60 @@
+---
+// Column chart rendered as HTML: one baseline, capped 24px columns, 4px rounded tops,
+// 2px surface gaps between stacked segments, hover/focus tooltip and a table view.
+import type { Point, Series } from './chart-types';
+interface Props { title: string; series: Series[]; points: Point[] }
+const { title, series, points } = Astro.props;
+
+const totals = points.map((p) => p.values.reduce((a, b) => a + b, 0));
+const peak = Math.max(0, ...totals);
+const niceMax = (v: number) => {
+  if (v <= 2) return 2;
+  const mag = 10 ** Math.floor(Math.log10(v));
+  for (const m of [1, 2, 4, 6, 8, 10]) if (m * mag >= v && (m * mag) % 2 === 0) return m * mag;
+  return 10 * mag;
+};
+const max = niceMax(peak);
+const fmt = (n: number) => (n >= 1000 ? `${+(n / 1000).toFixed(1)}K` : String(n));
+const ticks = [max, max / 2, 0];
+const xLabels = points.length > 2 ? [0, Math.floor((points.length - 1) / 2), points.length - 1] : points.map((_, i) => i);
+const focusable = points.length <= 31;
+const sum = totals.reduce((a, b) => a + b, 0);
+---
+<figure class="chart">
+  <figcaption class="chart__head">
+    <h3>{title}</h3>
+    <span class="chart__total">{fmt(sum)} total</span>
+  </figcaption>
+  {series.length > 1 && (
+    <ul class="legend">
+      {series.map((s) => <li><i style={`background:${s.color}`}></i>{s.name}</li>)}
+    </ul>
+  )}
+  <div class="plot">
+    <div class="plot__grid" aria-hidden="true">
+      {ticks.map((t) => <div class="tick"><span>{fmt(t)}</span></div>)}
+    </div>
+    <div class="plot__cols">
+      {points.map((p, i) => {
+        const tip = JSON.stringify({ t: p.label, r: series.map((s, k) => [s.name, p.values[k], s.color]) });
+        return (
+          <div class="col" data-tip={tip} tabindex={focusable ? 0 : undefined} aria-label={`${p.label}: ${series.map((s, k) => `${s.name} ${p.values[k]}`).join(', ')}`}>
+            <div class="bar" style={`height:${(totals[i] / max) * 100}%`}>
+              {p.values.map((v, k) => (v > 0 ? <span style={`flex:${v};background:${series[k].color}`}></span> : null))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+  <div class="xaxis" aria-hidden="true">
+    {xLabels.map((i) => <span>{points[i]?.label}</span>)}
+  </div>
+  <details class="tableview">
+    <summary>View as table</summary>
+    <table>
+      <thead><tr><th>Date</th>{series.map((s) => <th>{s.name}</th>)}</tr></thead>
+      <tbody>{points.map((p) => <tr><td>{p.label}</td>{p.values.map((v) => <td>{v}</td>)}</tr>)}</tbody>
+    </table>
+  </details>
+</figure>

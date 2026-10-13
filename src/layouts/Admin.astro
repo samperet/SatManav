@@ -1,0 +1,29 @@
+---
+import '../styles/admin.css';
+interface Props { title: string; signedIn?: boolean; }
+const { title, signedIn = false } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · Sat Manav Admin</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+  </head>
+  <body class="admin">
+    <header class="a-bar">
+      <a class="a-brand" href="/admin"><img src="/images/brand/lotus-white.webp" alt="" width="28" height="28" /> Sat Manav <span>Admin</span></a>
+      {signedIn && (
+        <nav class="a-nav">
+          <a href="/" target="_blank" rel="noopener">View site ↗</a>
+          <form method="post" action="/admin/logout"><button type="submit">Sign out</button></form>
+        </nav>
+      )}
+    </header>
+    <main class="a-main">
+      <slot />
+    </main>
+  </body>
+</html>

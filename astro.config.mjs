@@ -7,6 +7,6 @@ export default defineConfig({
   site: 'https://satmanavyogitattoos.com',
   output: 'static',
   adapter: vercel(),
-  integrations: [sitemap({ filter: (page) => !page.includes('/api/') })],
+  integrations: [sitemap({ filter: (page) => !page.includes('/api/') && !page.includes('/admin') })],
   build: { inlineStylesheets: 'auto' },
 });

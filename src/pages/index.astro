@@ -66,13 +66,13 @@ const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'];
     </div>
   </section>
 
-  <section class="section paper">
+  <section class="section paper" id="testimonials">
     <div class="wrap">
       <div class="section-head center">
         <img src="/images/brand/om.webp" alt="" width="120" height="112" style="width:90px;margin:0 auto 18px" loading="lazy" />
         <h2 class="h2">Testimonials</h2>
       </div>
-      <div class="quotes">
+      <div class="quotes" data-quotes>
         {testimonials.map((t) => (
           <blockquote class="quote">
             {t.paragraphs.map((p) => <p>{p}</p>)}
@@ -80,6 +80,30 @@ const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'];
           </blockquote>
         ))}
       </div>
+
+      <details class="share">
+        <summary class="btn">Share your experience</summary>
+        <form class="share__form" data-share novalidate>
+          <div class="share__row">
+            <div class="share__field">
+              <label for="t-name">Name *</label>
+              <input id="t-name" name="name" type="text" autocomplete="name" maxlength="80" required />
+            </div>
+            <div class="share__field">
+              <label for="t-email">Email <small>(not published)</small></label>
+              <input id="t-email" name="email" type="email" autocomplete="email" />
+            </div>
+          </div>
+          <div class="share__field">
+            <label for="t-body">Testimonial *</label>
+            <textarea id="t-body" name="body" rows="6" maxlength="3000" required></textarea>
+          </div>
+          <label class="share__consent"><input type="checkbox" name="consent" required /> I give permission to publish this on the site.</label>
+          <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <p class="share__status" role="status" aria-live="polite" data-share-status></p>
+          <button class="btn" type="submit">Submit</button>
+        </form>
+      </details>
     </div>
   </section>
 
@@ -97,3 +121,56 @@ const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'];
     </div>
   </section>
 </Base>
+
+<script>
+  // Approved testimonials submitted through the site (newest first), added before the originals.
+  const quotes = document.querySelector<HTMLElement>('[data-quotes]');
+  fetch('/api/testimonial')
+    .then((r) => (r.ok ? r.json() : []))
+    .then((list: { name: string; body: string }[]) => {
+      if (!quotes || !Array.isArray(list)) return;
+      const nodes = list.map((t) => {
+        const q = document.createElement('blockquote');
+        q.className = 'quote';
+        t.body.split(/\n{2,}/).forEach((para) => {
+          const p = document.createElement('p');
+          p.textContent = para.trim();
+          q.append(p);
+        });
+        const cite = document.createElement('cite');
+        cite.textContent = `— ${t.name}`;
+        q.append(cite);
+        return q;
+      });
+      quotes.prepend(...nodes);
+    })
+    .catch(() => {});
+
+  // Submit a testimonial for approval
+  const form = document.querySelector<HTMLFormElement>('[data-share]');
+  const status = document.querySelector<HTMLElement>('[data-share-status]');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const say = (m: string) => { if (status) status.textContent = m; };
+    const name = form.querySelector<HTMLInputElement>('#t-name')!;
+    const body = form.querySelector<HTMLTextAreaElement>('#t-body')!;
+    const consent = form.querySelector<HTMLInputElement>('[name=consent]')!;
+    if (!name.value.trim()) { say('Please add your name.'); name.focus(); return; }
+    if (body.value.trim().length < 10) { say('Please write a little more.'); body.focus(); return; }
+    if (!consent.checked) { say('Please tick the permission box.'); consent.focus(); return; }
+    const btn = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+    btn.disabled = true;
+    say('');
+    try {
+      const res = await fetch('/api/testimonial', { method: 'POST', body: new FormData(form) });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok || !out.ok) throw new Error(out.error);
+      form.reset();
+      say('Thank you. Your testimonial will appear here once it has been approved.');
+    } catch {
+      say('Something went wrong. Please try again.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>

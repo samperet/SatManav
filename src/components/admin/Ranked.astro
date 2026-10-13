@@ -1,0 +1,22 @@
+---
+// Ranked list with inline magnitude bars (one hue, sequential).
+interface Props { title: string; rows: { name: string; value: number }[]; unit: string }
+const { title, rows, unit } = Astro.props;
+const max = Math.max(1, ...rows.map((r) => r.value));
+---
+<section class="card ranked">
+  <h3>{title}</h3>
+  {rows.length === 0 ? (
+    <p class="empty">No data yet</p>
+  ) : (
+    <ol>
+      {rows.map((r) => (
+        <li title={`${r.name}: ${r.value} ${unit}`}>
+          <span class="ranked__bar" style={`width:${(r.value / max) * 100}%`}></span>
+          <span class="ranked__name">{r.name}</span>
+          <span class="ranked__val">{r.value.toLocaleString('en-US')}</span>
+        </li>
+      ))}
+    </ol>
+  )}
+</section>

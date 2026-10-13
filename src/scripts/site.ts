@@ -67,3 +67,40 @@ if (tiles.length) {
     if (Math.abs(dx) > 50) show(idx + (dx < 0 ? 1 : -1));
   });
 }
+
+/* ---------- Privacy-friendly analytics: no cookies, honours Do Not Track / GPC ---------- */
+(() => {
+  const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
+  if (nav.globalPrivacyControl || navigator.doNotTrack === '1') return;
+  const q = new URLSearchParams(location.search);
+  let refHost = '';
+  try {
+    refHost = document.referrer ? new URL(document.referrer).host : '';
+  } catch {}
+  const external = Boolean(refHost) && refHost !== location.host;
+  const touch = {
+    ref: external ? document.referrer : undefined,
+    utm_source: q.get('utm_source') ?? undefined,
+    utm_medium: q.get('utm_medium') ?? undefined,
+    utm_campaign: q.get('utm_campaign') ?? undefined,
+    src: q.get('src') ?? undefined,
+    landing: location.pathname,
+  };
+  const key = [touch.ref, touch.utm_source, touch.utm_medium, touch.utm_campaign, touch.src].join('|');
+  let stored: string | null = null;
+  try {
+    stored = sessionStorage.getItem('sm-touch-key');
+  } catch {}
+  // An entry = first page of the visit, or arriving again from a new external link/campaign.
+  const entry = stored === null || ((external || key.replace(/\|/g, '') !== '') && key !== stored);
+  if (entry) {
+    try {
+      sessionStorage.setItem('sm-touch-key', key);
+      sessionStorage.setItem('sm-touch', JSON.stringify(touch));
+    } catch {}
+  }
+  const body = JSON.stringify({ p: location.pathname, entry, t: entry ? touch : undefined });
+  if (!navigator.sendBeacon?.('/api/track', body)) {
+    fetch('/api/track', { method: 'POST', body, keepalive: true }).catch(() => {});
+  }
+})();

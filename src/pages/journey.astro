@@ -103,6 +103,7 @@ const themes = [
   const BUDGET = 3.8 * 1024 * 1024; // stay under Vercel's 4.5 MB request limit
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const KEY = 'sm-journey-email';
+  const ID_KEY = 'sm-journey-id';
 
   const step1 = document.querySelector<HTMLFormElement>('[data-step1]')!;
   const step2 = document.querySelector<HTMLFormElement>('[data-step2]')!;
@@ -113,6 +114,7 @@ const themes = [
   const thumbs = document.querySelector<HTMLUListElement>('[data-thumbs]')!;
   const dropzone = document.querySelector<HTMLElement>('[data-dropzone]')!;
   let email = '';
+  let leadId = '';
   let photos: { file: File; url: string }[] = [];
 
   const say = (form: HTMLElement, msg: string) => {
@@ -120,7 +122,25 @@ const themes = [
     s.textContent = msg;
     s.classList.toggle('show', !!msg);
   };
-  const store = (v: string | null) => { try { v ? sessionStorage.setItem(KEY, v) : sessionStorage.removeItem(KEY); } catch {} };
+  const store = (v: string | null, id = '') => {
+    try {
+      if (v) {
+        sessionStorage.setItem(KEY, v);
+        sessionStorage.setItem(ID_KEY, id);
+      } else {
+        sessionStorage.removeItem(KEY);
+        sessionStorage.removeItem(ID_KEY);
+      }
+    } catch {}
+  };
+  // Where this visitor came from (captured by the site-wide analytics beacon)
+  const touch = () => {
+    try {
+      return sessionStorage.getItem('sm-touch') ?? '{}';
+    } catch {
+      return '{}';
+    }
+  };
 
   const showStep2 = (focus = true) => {
     echo.textContent = email;
@@ -129,16 +149,18 @@ const themes = [
     if (focus) step2.querySelector<HTMLInputElement>('#first')!.focus();
   };
 
-  async function post(data: FormData) {
+  async function post(data: FormData): Promise<{ id?: string | null }> {
+    data.set('touch', touch());
     const res = await fetch('/api/lead', { method: 'POST', body: data });
     const body = await res.json().catch(() => ({}));
     if (!res.ok || !body.ok) throw new Error(body.error || String(res.status));
+    return body;
   }
 
   // Resume step 2 after a refresh in the same tab
   try {
     const saved = sessionStorage.getItem(KEY);
-    if (saved) { email = saved; showStep2(false); }
+    if (saved) { email = saved; leadId = sessionStorage.getItem(ID_KEY) ?? ''; showStep2(false); }
   } catch {}
 
   step1.addEventListener('submit', async (e) => {
@@ -151,9 +173,10 @@ const themes = [
     try {
       const data = new FormData(step1);
       data.set('stage', 'email');
-      await post(data);
+      const res = await post(data);
       email = value;
-      store(email);
+      leadId = res.id ?? '';
+      store(email, leadId);
       showStep2();
     } catch {
       say(step1, 'Something went wrong. Please try again, or email us directly below.');
@@ -237,6 +260,7 @@ const themes = [
       const data = new FormData(step2);
       data.set('stage', 'details');
       data.set('email', email);
+      data.set('id', leadId);
       for (const p of await packPhotos()) data.append('photos', p.blob, p.name);
       await post(data);
       store(null);
