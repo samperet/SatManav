@@ -1,0 +1,17 @@
+{
+  "id": "/admin",
+  "name": "Sat Manav Admin",
+  "short_name": "Sat Manav",
+  "description": "Leads, traffic and testimonial approvals for Sat Manav Tattoos.",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0303",
+  "theme_color": "#0b0303",
+  "icons": [
+    { "src": "/admin-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/admin-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/admin-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

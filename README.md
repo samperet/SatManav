@@ -58,6 +58,22 @@ Sign in with `ADMIN_PASSWORD`. Pick a range (7 / 30 / 90 days, 12 months) to see
 
 **Privacy:** analytics are first-party and cookieless. No IP addresses or raw user agents are stored; visitors are counted with a hash that rotates daily. Do Not Track and Global Privacy Control are honoured.
 
+## Admin app & push notifications
+
+`/admin` is an installable app (PWA) that sends push notifications for:
+
+- **New lead**: someone entered their email on the Journey form
+- **Journey completed**: they finished the details (with photo count)
+- **New testimonial to approve**
+
+**Set it up on a device:** sign in to `/admin`, then use the **Notifications** panel at the top.
+
+- **iPhone / iPad (iOS 16.4+):** open `/admin` in Safari → Share → **Add to Home Screen** → open *Sat Manav* from the home screen → sign in → **Turn on notifications**. (Apple only allows web notifications for apps added to the home screen.)
+- **Android / desktop Chrome or Edge:** **Install app** (or the install icon in the address bar), then **Turn on notifications**. Notifications also work in a normal browser tab.
+- **Send a test** confirms it works; **Turn off** removes that device. Each device is enabled separately.
+
+How it works: `public/admin.webmanifest` + `public/admin-sw.js` (the service worker only shows notifications and opens the dashboard; it caches nothing). Devices are stored in the `push_subscriptions` table; devices that uninstall are removed automatically. The web-push (VAPID) key pair is **generated automatically** on first use and kept in the `app_settings` table, so no configuration is needed. Set `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` only if you want to supply your own.
+
 ## Testimonials
 
 Visitors can submit a testimonial from the homepage (name, optional private email, text, permission to publish). Submissions are saved as **pending** and Shug gets an email. Approved ones appear on the homepage within about a minute (edge-cached), ahead of the original testimonials.

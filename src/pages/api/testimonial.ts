@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { dbConfigured, query } from '../../lib/server/db';
 import { sendEmail } from '../../lib/server/email';
+import { notifyAdmins } from '../../lib/server/push';
+import { waitUntil } from '@vercel/functions';
 
 // Public: GET approved testimonials (CDN-cached), POST a new one for approval.
 export const prerender = false;
@@ -48,6 +50,9 @@ export const POST: APIRoute = async ({ request }) => {
     console.error('[testimonial:post]', err);
     return json(502, { ok: false, error: 'save_failed' });
   }
+  waitUntil(
+    notifyAdmins({ title: 'New testimonial to approve', body: `${name}: “${body.length > 90 ? body.slice(0, 90) + '…' : body}”`, url: '/admin#testimonials', tag: 'testimonial' }),
+  );
   await sendEmail({
     subject: `New testimonial from ${name} (awaiting approval)`,
     rows: [['Name', name], ['Email', email], ['Testimonial', body]],

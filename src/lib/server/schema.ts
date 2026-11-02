@@ -67,5 +67,22 @@ create table if not exists testimonials (
 );
 create index if not exists testimonials_status_idx on testimonials (status, approved_at desc);
 
+-- Small key/value store for server settings (e.g. the generated web-push VAPID key pair).
+create table if not exists app_settings (
+  key text primary key,
+  value text not null,
+  created_at timestamptz not null default now()
+);
+
+-- Devices that receive admin push notifications.
+create table if not exists push_subscriptions (
+  endpoint text primary key,
+  p256dh text not null,
+  auth text not null,
+  label text,                          -- e.g. "iPhone · Safari", shown in the admin
+  created_at timestamptz not null default now(),
+  last_success_at timestamptz
+);
+
 commit;
 `;

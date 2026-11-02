@@ -3,6 +3,7 @@ import Admin from '../../layouts/Admin.astro';
 import Columns from '../../components/admin/Columns.astro';
 import type { Point } from '../../components/admin/chart-types';
 import Ranked from '../../components/admin/Ranked.astro';
+import Notify from '../../components/admin/Notify.astro';
 import { isAdmin, SESSION_COOKIE } from '../../lib/server/auth';
 import { dbConfigured, query } from '../../lib/server/db';
 import { adminStats, type Stats } from '../../lib/server/stats';
@@ -107,6 +108,8 @@ const pendingCount = tCount('pending');
     ))}
     <a class="a-btn a-btn--ghost" href={`/api/admin/leads.csv?days=${days}`} download>Export leads (CSV)</a>
   </div>
+
+  {configured && <Notify />}
 
   {pendingCount > 0 && (
     <a class="callout" href="#testimonials">{pendingCount} testimonial{pendingCount === 1 ? '' : 's'} awaiting approval →</a>

@@ -199,6 +199,20 @@ td.w-bar { display: flex; align-items: center; gap: 8px; }
 .a-btn--danger { color: var(--critical); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* Notifications / app install */
+.notify { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+.notify__text { flex: 1 1 320px; }
+.notify__text p { margin: 4px 0 0; color: var(--text-secondary); font-size: .9rem; }
+.notify__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Installed app: keep the header clear of the notch / status bar */
+.a-bar { padding-top: calc(12px + env(safe-area-inset-top)); padding-left: max(clamp(16px, 3vw, 32px), env(safe-area-inset-left)); padding-right: max(clamp(16px, 3vw, 32px), env(safe-area-inset-right)); }
+
+.a-brand { white-space: nowrap; }
+@media (max-width: 560px) {
+  .a-brand span, .a-nav a { display: none; } /* just the logo, name and Sign out on phones */
+  .a-nav button { padding: 4px 10px; font-size: .85rem; }
+}
+
 @media (max-width: 1000px) {
   .kpis { grid-template-columns: repeat(3, 1fr); }
   .grid-2 { grid-template-columns: 1fr; }

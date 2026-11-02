@@ -1,0 +1,124 @@
+---
+// "Notifications" panel: install the admin as an app and turn on push notifications per device.
+---
+<section class="card notify" data-notify hidden>
+  <div class="notify__text">
+    <h2 class="card__title">Notifications</h2>
+    <p data-n-msg>Checking this device…</p>
+  </div>
+  <div class="notify__actions">
+    <button type="button" class="a-btn a-btn--ghost" data-n-install hidden>Install app</button>
+    <button type="button" class="a-btn" data-n-on hidden>Turn on notifications</button>
+    <button type="button" class="a-btn a-btn--ghost" data-n-test hidden>Send a test</button>
+    <button type="button" class="a-btn a-btn--ghost" data-n-off hidden>Turn off</button>
+  </div>
+</section>
+
+<script>
+  const card = document.querySelector<HTMLElement>('[data-notify]')!;
+  const msg = card.querySelector<HTMLElement>('[data-n-msg]')!;
+  const btn = {
+    install: card.querySelector<HTMLButtonElement>('[data-n-install]')!,
+    on: card.querySelector<HTMLButtonElement>('[data-n-on]')!,
+    test: card.querySelector<HTMLButtonElement>('[data-n-test]')!,
+    off: card.querySelector<HTMLButtonElement>('[data-n-off]')!,
+  };
+  const show = (text: string, ...visible: (keyof typeof btn)[]) => {
+    msg.textContent = text;
+    (Object.keys(btn) as (keyof typeof btn)[]).forEach((k) => {
+      if (k !== 'install') btn[k].hidden = !visible.includes(k);
+    });
+    card.hidden = false;
+  };
+
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const label = () => {
+    const device = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) || isIOS ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Computer';
+    const browser = /Edg\//.test(ua) ? 'Edge' : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /Chrome|CriOS/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'Browser';
+    return `${device} · ${browser}${standalone ? ' (app)' : ''}`;
+  };
+  const toKey = (b64: string) => {
+    const s = atob(b64.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (b64.length % 4)) % 4));
+    return Uint8Array.from(s, (c) => c.charCodeAt(0));
+  };
+  const api = (method: string, body?: unknown) =>
+    fetch('/api/admin/push', { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+
+  // "Install app" where the browser offers it (Chrome, Edge, Android).
+  let deferred: (Event & { prompt: () => Promise<void> }) | null = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferred = e as typeof deferred;
+    btn.install.hidden = false;
+    card.hidden = false;
+  });
+  btn.install.addEventListener('click', async () => {
+    await deferred?.prompt();
+    deferred = null;
+    btn.install.hidden = true;
+  });
+
+  async function refresh() {
+    if (isIOS && !standalone) {
+      return show('To get notifications on iPhone or iPad: tap the Share button, choose "Add to Home Screen", then open Sat Manav from your home screen and turn notifications on there.');
+    }
+    if (!supported) return show('This browser can’t show notifications. Try Chrome, Edge, Firefox or Safari.');
+    if (Notification.permission === 'denied') {
+      return show('Notifications are blocked for this site. Allow them in your browser or phone settings, then reload this page.');
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub && Notification.permission === 'granted') {
+      await api('POST', { subscription: sub.toJSON(), label: label() }).catch(() => {}); // keep the server in sync
+      return show('On for this device. You’ll be notified about new leads, completed journeys and testimonials to approve.', 'test', 'off');
+    }
+    show('Get a notification on this device when a new lead or testimonial comes in.', 'on');
+  }
+
+  btn.on.addEventListener('click', async () => {
+    btn.on.disabled = true;
+    try {
+      // Ask first, directly from the tap (required on iPhone).
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return refresh();
+      const res = await api('GET');
+      if (!res.ok) throw new Error(String(res.status));
+      const { publicKey } = await res.json();
+      const reg = await navigator.serviceWorker.ready;
+      const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toKey(publicKey) }));
+      const saved = await api('POST', { subscription: sub.toJSON(), label: label() });
+      if (!saved.ok) throw new Error(String(saved.status));
+      await refresh();
+    } catch {
+      show('Couldn’t turn notifications on. Please try again.', 'on');
+    } finally {
+      btn.on.disabled = false;
+    }
+  });
+
+  btn.test.addEventListener('click', async () => {
+    btn.test.disabled = true;
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    const res = sub
+      ? await fetch('/api/admin/push/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => null)
+      : null;
+    msg.textContent = res?.ok ? 'Test sent. It should arrive in a few seconds.' : 'The test didn’t go through. Try turning notifications off and on again.';
+    btn.test.disabled = false;
+  });
+
+  btn.off.addEventListener('click', async () => {
+    btn.off.disabled = true;
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if (sub) {
+      await api('DELETE', { endpoint: sub.endpoint }).catch(() => {});
+      await sub.unsubscribe().catch(() => {});
+    }
+    btn.off.disabled = false;
+    refresh();
+  });
+
+  refresh().catch(() => show('Notifications aren’t available right now.'));
+</script>

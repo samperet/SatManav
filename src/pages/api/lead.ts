@@ -3,6 +3,8 @@ import { dbConfigured, dbUrl, query } from '../../lib/server/db';
 import { photosConfigured, savePhoto } from '../../lib/server/photos';
 import { attribute, clientIp, deviceInfo, geo, visitorId, type Touch } from '../../lib/server/attribution';
 import { sendEmail } from '../../lib/server/email';
+import { notifyAdmins } from '../../lib/server/push';
+import { waitUntil } from '@vercel/functions';
 
 // Journey form: saves each lead to the database (shown in /admin) and emails it to Shug.
 export const prerender = false;
@@ -82,6 +84,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       },
       () => sendEmail({ subject: `New lead: ${email}`, rows: [['Email', email], ['Source', sourceLine], ['Step', 'Email only (step 1)']], replyTo: email, footer: FOOTER }),
     );
+    if (sent) waitUntil(notifyAdmins({ title: 'New lead', body: `${email} · via ${a.source}`, url: '/admin#leads', tag: `lead-${email}` }));
     return sent ? json(200, { ok: true, id }) : json(502, { ok: false, error: 'send_failed' });
   }
 
@@ -169,6 +172,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
           footer: FOOTER,
         }),
     );
+    if (sent) {
+      const extra = files.length ? ` · ${files.length} photo${files.length === 1 ? '' : 's'}` : '';
+      waitUntil(notifyAdmins({ title: 'Journey completed', body: `${name || email}${extra}`, url: '/admin#leads', tag: `lead-${email}` }));
+    }
     return sent ? json(200, { ok: true }) : json(502, { ok: false, error: 'send_failed' });
   }
 
