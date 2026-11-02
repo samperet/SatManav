@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { db } from '../../lib/server/supabase';
+import { db, iso } from '../../lib/server/db';
 import { sendEmail } from '../../lib/server/email';
 
 // Public: GET approved testimonials (CDN-cached), POST a new one for approval.
@@ -11,20 +11,17 @@ const json = (status: number, body: unknown, headers: Record<string, string> = {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const GET: APIRoute = async () => {
-  const client = db();
-  if (!client) return json(200, []);
-  const { data, error } = await client
-    .from('testimonials')
-    .select('name, body, approved_at')
-    .eq('status', 'approved')
-    .order('approved_at', { ascending: false })
-    .limit(50);
-  if (error) {
-    console.error('[testimonial:get]', error.message);
+  try {
+    const q = await db();
+    if (!q) return json(200, []);
+    const rows = await q(`select name, body, approved_at from testimonials where status = 'approved' order by approved_at desc limit 50`);
+    const data = rows.map((r) => ({ name: r.name, body: r.body, approved_at: iso(r.approved_at) }));
+    // Cached at Vercel's edge for a minute, then refreshed in the background.
+    return json(200, data, { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=600' });
+  } catch (e) {
+    console.error('[testimonial:get]', e instanceof Error ? e.message : e);
     return json(200, []);
   }
-  // Cached at Vercel's edge for a minute, then refreshed in the background.
-  return json(200, data, { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=600' });
 };
 
 export const POST: APIRoute = async ({ request }) => {
@@ -46,11 +43,12 @@ export const POST: APIRoute = async ({ request }) => {
   if (email && !EMAIL_RE.test(email)) return json(400, { ok: false, error: 'invalid_email' });
   if (!consent) return json(400, { ok: false, error: 'consent_required' });
 
-  const client = db();
-  if (!client) return json(503, { ok: false, error: 'not_configured' });
-  const { error } = await client.from('testimonials').insert({ name, email: email || null, body, consent });
-  if (error) {
-    console.error('[testimonial:post]', error.message);
+  try {
+    const q = await db();
+    if (!q) return json(503, { ok: false, error: 'not_configured' });
+    await q(`insert into testimonials (name, email, body, consent) values ($1, $2, $3, $4)`, [name, email || null, body, consent]);
+  } catch (e) {
+    console.error('[testimonial:post]', e instanceof Error ? e.message : e);
     return json(502, { ok: false, error: 'save_failed' });
   }
   await sendEmail({

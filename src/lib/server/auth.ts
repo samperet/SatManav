@@ -1,4 +1,5 @@
 import { getSecret } from 'astro:env/server';
+import { serverSecret } from './db';
 
 // Password-protected admin: a signed, HttpOnly session cookie. Changing ADMIN_PASSWORD signs everyone out.
 export const SESSION_COOKIE = 'sm_admin';
@@ -8,7 +9,7 @@ const enc = new TextEncoder();
 const b64url = (buf: ArrayBuffer) => Buffer.from(buf).toString('base64url');
 
 async function sign(data: string): Promise<string> {
-  const secret = `${getSecret('ADMIN_PASSWORD') ?? ''}|${getSecret('SUPABASE_SECRET_KEY') ?? ''}`;
+  const secret = `${getSecret('ADMIN_PASSWORD') ?? ''}|${serverSecret()}`;
   const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   return b64url(await crypto.subtle.sign('HMAC', key, enc.encode(data)));
 }

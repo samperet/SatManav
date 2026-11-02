@@ -1,41 +1,46 @@
 import type { APIRoute } from 'astro';
 import { isAdmin, SESSION_COOKIE } from '../../../lib/server/auth';
-import { db } from '../../../lib/server/supabase';
+import { db } from '../../../lib/server/db';
 
 export const prerender = false;
 
 // Moderate a testimonial: approve (optionally with edited text), reject, unpublish or delete.
 export const POST: APIRoute = async ({ request, cookies }) => {
   if (!(await isAdmin(cookies.get(SESSION_COOKIE)?.value))) return new Response('Unauthorized', { status: 401 });
-  const client = db();
-  if (!client) return new Response('Database not configured', { status: 503 });
+  const q = await db();
+  if (!q) return new Response('Database not configured', { status: 503 });
   const { id, action, name, body } = await request.json().catch(() => ({}));
   if (typeof id !== 'string') return new Response('Bad request', { status: 400 });
 
-  const now = new Date().toISOString();
-  const edits: Record<string, string> = {};
-  if (typeof name === 'string' && name.trim()) edits.name = name.trim().slice(0, 80);
-  if (typeof body === 'string' && body.trim().length >= 10) edits.body = body.trim().slice(0, 3000);
+  const newName = typeof name === 'string' && name.trim() ? name.trim().slice(0, 80) : null;
+  const newBody = typeof body === 'string' && body.trim().length >= 10 ? body.trim().slice(0, 3000) : null;
 
-  let query;
+  let sql: string;
+  let params: unknown[] = [id];
   switch (action) {
     case 'approve':
-      query = client.from('testimonials').update({ ...edits, status: 'approved', approved_at: now, updated_at: now }).eq('id', id);
+      sql = `update testimonials set name = coalesce($2, name), body = coalesce($3, body), status = 'approved', approved_at = now(), updated_at = now() where id = $1::uuid`;
+      params = [id, newName, newBody];
       break;
     case 'save':
-      query = client.from('testimonials').update({ ...edits, updated_at: now }).eq('id', id);
+      sql = `update testimonials set name = coalesce($2, name), body = coalesce($3, body), updated_at = now() where id = $1::uuid`;
+      params = [id, newName, newBody];
       break;
     case 'reject':
     case 'unpublish':
-      query = client.from('testimonials').update({ status: action === 'reject' ? 'rejected' : 'pending', approved_at: null, updated_at: now }).eq('id', id);
+      sql = `update testimonials set status = $2, approved_at = null, updated_at = now() where id = $1::uuid`;
+      params = [id, action === 'reject' ? 'rejected' : 'pending'];
       break;
     case 'delete':
-      query = client.from('testimonials').delete().eq('id', id);
+      sql = `delete from testimonials where id = $1::uuid`;
       break;
     default:
       return new Response('Bad request', { status: 400 });
   }
-  const { error } = await query;
-  if (error) return new Response(error.message, { status: 500 });
+  try {
+    await q(sql, params);
+  } catch (e) {
+    return new Response(e instanceof Error ? e.message : 'Update failed', { status: 500 });
+  }
   return new Response(null, { status: 204 });
 };

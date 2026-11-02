@@ -4,7 +4,9 @@ import Columns from '../../components/admin/Columns.astro';
 import type { Point } from '../../components/admin/chart-types';
 import Ranked from '../../components/admin/Ranked.astro';
 import { isAdmin, SESSION_COOKIE } from '../../lib/server/auth';
-import { db, PHOTO_BUCKET } from '../../lib/server/supabase';
+import { db, dbConfigured, iso } from '../../lib/server/db';
+import { photoUrl } from '../../lib/server/photos';
+import { adminStats, type Stats } from '../../lib/server/stats';
 
 export const prerender = false;
 
@@ -20,15 +22,6 @@ const RANGES = [
 const days = RANGES.some((r) => r.days === Number(Astro.url.searchParams.get('days'))) ? Number(Astro.url.searchParams.get('days')) : 30;
 const TZ = 'America/New_York';
 
-type Row = { name: string; [k: string]: string | number };
-type Stats = {
-  since: string;
-  totals: { visitors: number; pageviews: number; visits: number; leads: number; completed: number };
-  previous: { visitors: number; pageviews: number; leads: number; completed: number };
-  daily: { day: string; visitors: number; pageviews: number; leads_email: number; leads_details: number }[];
-  sources: { source: string; visits: number; visitors: number; leads: number; completed: number }[];
-  referrers: Row[]; campaigns: Row[]; pages: Row[]; landing: Row[]; countries: Row[]; cities: Row[]; devices: Row[]; browsers: Row[];
-};
 type Lead = {
   id: string; created_at: string; email: string; stage: 'email' | 'details'; status: string;
   first_name: string | null; last_name: string | null; phone: string | null; intention: string | null;
@@ -39,29 +32,28 @@ type Lead = {
 
 type Testimonial = { id: string; created_at: string; name: string; email: string | null; body: string; consent: boolean; status: 'pending' | 'approved' | 'rejected' };
 
-const client = db();
+const client = dbConfigured();
 let testimonials: Testimonial[] = [];
 let stats: Stats | null = null;
 let leads: Lead[] = [];
-let photoUrls = new Map<string, string>();
 let loadError = '';
 
 if (client) {
-  // The moderation queue is not limited by the date range: pending items must never hide.
-  const tq = await client.from('testimonials').select('*').order('created_at', { ascending: false }).limit(300);
-  testimonials = (tq.data ?? []) as Testimonial[];
-  const { data, error } = await client.rpc('admin_stats', { p_days: days, p_tz: TZ });
-  if (error) loadError = error.message;
-  else {
-    stats = data as Stats;
-    const res = await client.from('leads').select('*').gte('created_at', stats.since).order('created_at', { ascending: false }).limit(500);
-    if (res.error) loadError = res.error.message;
-    leads = (res.data ?? []) as Lead[];
-    const paths = leads.flatMap((l) => l.photos ?? []);
-    if (paths.length) {
-      const signed = await client.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 60 * 60);
-      for (const s of signed.data ?? []) if (s.signedUrl && s.path) photoUrls.set(s.path, s.signedUrl);
+  try {
+    const q = await db();
+    if (q) {
+      // The moderation queue is not limited by the date range: pending items must never hide.
+      const [tRows, s] = await Promise.all([
+        q(`select * from testimonials order by created_at desc limit 300`),
+        adminStats(q, days, TZ),
+      ]);
+      testimonials = tRows.map((r) => ({ ...r, created_at: iso(r.created_at) })) as Testimonial[];
+      stats = s;
+      const lRows = await q(`select * from leads where created_at >= $1 order by created_at desc limit 500`, [stats.since]);
+      leads = lRows.map((r) => ({ ...r, created_at: iso(r.created_at), photos: (r.photos as string[] | null) ?? [] })) as Lead[];
     }
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : String(e);
   }
 }
 
@@ -94,7 +86,7 @@ function bucket(rows: Stats['daily'], pick: (r: Stats['daily'][number]) => numbe
 }
 const visitorsPts = stats ? bucket(stats.daily, (r) => [r.visitors]) : [];
 const leadsPts = stats ? bucket(stats.daily, (r) => [r.leads_email, r.leads_details]) : [];
-const rows = (list: Row[] | undefined, key: string) => (list ?? []).map((r) => ({ name: String(r.name), value: Number(r[key]) }));
+const rows = (list: Stats['referrers'] | undefined, key: string) => (list ?? []).map((r) => ({ name: String(r.name), value: Number(r[key]) }));
 const sourceMax = stats ? Math.max(1, ...stats.sources.map((s) => s.visits)) : 1;
 const t = stats?.totals;
 const p = stats?.previous;
@@ -129,7 +121,7 @@ const pendingCount = tCount('pending');
   {!client && (
     <section class="card setup">
       <h2>Finish setup</h2>
-      <p>The dashboard needs the database key. In Vercel → Project → Settings → Environment Variables, add <code>SUPABASE_SECRET_KEY</code> (Supabase → Project Settings → API Keys → secret key), then redeploy.</p>
+      <p>The dashboard needs a database. In Vercel, open the <strong>sat-manav</strong> project → <strong>Storage</strong> → <strong>Create Database</strong> → <strong>Neon</strong> (Postgres), connect it to the project, then redeploy. Tables are created automatically.</p>
     </section>
   )}
   {loadError && <p class="a-error" role="alert">Could not load data: {loadError}</p>}
@@ -230,8 +222,8 @@ const pendingCount = tCount('pending');
                     </dl>
                     {l.photos?.length > 0 && (
                       <ul class="photos">
-                        {l.photos.map((path) => photoUrls.get(path) && (
-                          <li><a href={photoUrls.get(path)} target="_blank" rel="noopener"><img src={photoUrls.get(path)} alt="Inspirational photo" loading="lazy" /></a></li>
+                        {l.photos.map((path) => (
+                          <li><a href={photoUrl(path)} target="_blank" rel="noopener"><img src={photoUrl(path)} alt="Inspirational photo" loading="lazy" /></a></li>
                         ))}
                       </ul>
                     )}

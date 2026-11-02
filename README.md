@@ -29,7 +29,7 @@ The form captures leads in two steps:
 1. **Email only.** As soon as a visitor enters their email, Shug gets a `New lead: …` email, so the contact is captured even if they stop there.
 2. **Details.** The rest of the form appears: name, phone, intention, style ratings, message and up to 8 inspirational photos. Submitting sends a `Journey details: …` email with the photos attached.
 
-Every lead is also saved to the database (photos in private storage) and shown in `/admin`, with where the visitor came from.
+Every lead is also saved to the database (photos in the private Blob store) and shown in `/admin`, with where the visitor came from.
 
 Both emails go to `satmanavyogi@gmail.com` with **Reply-To set to the visitor**, so hitting Reply answers them directly. Photos are resized in the browser before upload to stay within Vercel's 4.5 MB request limit.
 
@@ -62,16 +62,23 @@ Sign in with `ADMIN_PASSWORD`. Pick a range (7 / 30 / 90 days, 12 months) to see
 
 Visitors can submit a testimonial from the homepage (name, optional private email, text, permission to publish). Submissions are saved as **pending** and Shug gets an email. Approved ones appear on the homepage within about a minute (edge-cached), ahead of the original testimonials.
 
-## Database (Supabase)
+## Database & photo storage (Vercel)
 
-Project **satmanav** (`awzphbubjvsrctmuqhoi`, US East) in the Colloqui org. Tables `pageviews`, `leads`, `testimonials` and the private `lead-photos` bucket have row-level security on with **no public policies**: only the website's server (secret key) can read or write. Dashboard numbers come from the `admin_stats` SQL function.
+Both live in the Vercel project (**sat-manav** → **Storage**), so there is nothing to manage elsewhere:
+
+- **Neon Postgres** holds `pageviews`, `leads` and `testimonials`. Create it once in Vercel → Storage → *Create Database* → *Neon* and connect it to the project; the integration sets `DATABASE_URL` automatically. The site creates its tables the first time it connects (schema in `src/lib/server/schema.sql`), so no migrations to run. Dashboard numbers are computed in SQL by `src/lib/server/stats.ts`.
+- **Vercel Blob** store `satmanav-photos` (private) holds the Journey photos. It sets `BLOB_READ_WRITE_TOKEN`. Photos are only ever served to a signed-in admin through `/api/admin/photo`.
+
+The database is reachable only with its connection string, which stays on the server.
 
 ## Environment variables (Vercel)
 
 | Variable | Needed for |
 | --- | --- |
 | `ADMIN_PASSWORD` | Signing in to `/admin` |
-| `SUPABASE_SECRET_KEY` | Saving visits, leads, testimonials; the dashboard (Supabase → Project Settings → API Keys → secret key) |
+| `DATABASE_URL` | Set automatically by the Neon database (Vercel → Storage). Saving visits, leads, testimonials; the dashboard |
+| `BLOB_READ_WRITE_TOKEN` | Set automatically by the `satmanav-photos` Blob store. Journey photos |
+| `SESSION_SECRET` | Optional: extra secret for admin sessions and anonymous visitor ids (defaults to a value derived from `DATABASE_URL`) |
 | `RESEND_API_KEY` | Notification emails to Shug |
 | `LEAD_TO_EMAIL`, `LEAD_FROM_EMAIL` | Optional overrides (see above) |
 

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
-import { getSecret } from 'astro:env/server';
-import { db, PHOTO_BUCKET } from '../../lib/server/supabase';
+import { db, serverSecret } from '../../lib/server/db';
+import { photosConfigured, putPhoto } from '../../lib/server/photos';
 import { attribute, clientIp, deviceInfo, geo, visitorId, type Touch } from '../../lib/server/attribution';
 import { sendEmail } from '../../lib/server/email';
 
@@ -44,7 +44,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const email = field(form, 'email', 254).toLowerCase();
   if (!EMAIL_RE.test(email)) return json(400, { ok: false, error: 'invalid_email' });
 
-  const client = db();
+  const q = await db().catch((e) => {
+    console.error('[lead] db', e instanceof Error ? e.message : e);
+    return null;
+  });
   const stage = field(form, 'stage', 20);
   let touch: Touch = {};
   try {
@@ -59,25 +62,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const sent = await deliver(
       'email',
       async () => {
-        if (!client) return false;
-        const { data, error } = await client
-          .from('leads')
-          .insert({
-            email,
-            stage: 'email',
-            source: a.source,
-            medium: a.medium,
-            referrer_host: a.referrer_host,
-            utm_campaign: a.utm_campaign,
-            landing_path: typeof touch.landing === 'string' ? touch.landing.slice(0, 200) : null,
-            ...geo(request.headers),
-            device: deviceInfo(ua).device,
-            visitor: await visitorId(clientIp(request, clientAddress), ua, getSecret('SUPABASE_SECRET_KEY') ?? ''),
-          })
-          .select('id')
-          .single();
-        if (error) throw error;
-        id = data.id;
+        if (!q) return false;
+        const g = geo(request.headers);
+        const [row] = await q(
+          `insert into leads (email, stage, source, medium, referrer_host, utm_campaign, landing_path, country, region, city, device, visitor)
+           values ($1, 'email', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
+          [
+            email, a.source, a.medium, a.referrer_host, a.utm_campaign,
+            typeof touch.landing === 'string' ? touch.landing.slice(0, 200) : null,
+            g.country, g.region, g.city, deviceInfo(ua).device,
+            await visitorId(clientIp(request, clientAddress), ua, serverSecret()),
+          ],
+        );
+        id = String(row.id);
         return true;
       },
       () => sendEmail({ subject: `New lead: ${email}`, rows: [['Email', email], ['Source', sourceLine], ['Step', 'Email only (step 1)']], replyTo: email, footer: FOOTER }),
@@ -115,34 +112,38 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const sent = await deliver(
       'details',
       async () => {
-        if (!client) return false;
+        if (!q) return false;
         // Reuse the step-1 row when we have it; otherwise create one.
-        let id = UUID_RE.test(idIn) ? idIn : null;
-        if (id) {
-          const { data } = await client.from('leads').select('id').eq('id', id).eq('email', email).maybeSingle();
-          id = data?.id ?? null;
+        let id: string | null = null;
+        if (UUID_RE.test(idIn)) {
+          const [row] = await q(`select id from leads where id = $1::uuid and email = $2`, [idIn, email]);
+          id = row ? String(row.id) : null;
         }
         if (!id) {
-          const { data, error } = await client
-            .from('leads')
-            .insert({ email, stage: 'details', source: a.source, medium: a.medium, referrer_host: a.referrer_host, utm_campaign: a.utm_campaign, ...geo(request.headers), device: deviceInfo(ua).device })
-            .select('id')
-            .single();
-          if (error) throw error;
-          id = data.id as string;
+          const g = geo(request.headers);
+          const [row] = await q(
+            `insert into leads (email, stage, source, medium, referrer_host, utm_campaign, country, region, city, device)
+             values ($1, 'details', $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
+            [email, a.source, a.medium, a.referrer_host, a.utm_campaign, g.country, g.region, g.city, deviceInfo(ua).device],
+          );
+          id = String(row.id);
         }
         const paths: string[] = [];
-        for (const [i, f] of files.entries()) {
-          const path = `${id}/${Date.now()}-${i + 1}-${f.name}`;
-          const { error } = await client.storage.from(PHOTO_BUCKET).upload(path, f.bytes, { contentType: f.type, upsert: false });
-          if (error) console.error('[lead] photo upload', error.message);
-          else paths.push(path);
+        if (files.length && !photosConfigured()) console.error('[lead] photo upload skipped: BLOB_READ_WRITE_TOKEN is not set');
+        else {
+          for (const [i, f] of files.entries()) {
+            try {
+              paths.push(await putPhoto(`leads/${id}/${Date.now()}-${i + 1}-${f.name}`, f.bytes, f.type));
+            } catch (e) {
+              console.error('[lead] photo upload', e instanceof Error ? e.message : e);
+            }
+          }
         }
-        const { error } = await client
-          .from('leads')
-          .update({ ...details, stage: 'details', photos: paths, updated_at: new Date().toISOString() })
-          .eq('id', id);
-        if (error) throw error;
+        await q(
+          `update leads set first_name = $2, last_name = $3, phone = $4, intention = $5, geometric = $6, abstract = $7, eastern = $8, message = $9,
+             stage = 'details', photos = $10, updated_at = now() where id = $1::uuid`,
+          [id, details.first_name, details.last_name, details.phone, details.intention, details.geometric, details.abstract, details.eastern, details.message, paths],
+        );
         return true;
       },
       () =>
