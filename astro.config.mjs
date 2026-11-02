@@ -9,4 +9,6 @@ export default defineConfig({
   adapter: vercel(),
   integrations: [sitemap({ filter: (page) => !page.includes('/api/') && !page.includes('/admin') })],
   build: { inlineStylesheets: 'auto' },
+  // Origin checks are done in src/middleware.ts (works behind Vercel's proxy).
+  security: { checkOrigin: false },
 });
