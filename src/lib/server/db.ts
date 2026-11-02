@@ -14,7 +14,10 @@ function getPool(): Pool | null {
   if (pool !== undefined) return pool;
   const url = dbUrl();
   if (!url) return (pool = null);
-  pool = new Pool({ connectionString: url, max: 5, idleTimeoutMillis: 10_000 });
+  // Neon's URL says sslmode=require; pin full certificate verification explicitly so a future
+  // pg release (which will weaken "require") can't silently downgrade it.
+  const connectionString = url.replace(/sslmode=(prefer|require|verify-ca)\b/, 'sslmode=verify-full');
+  pool = new Pool({ connectionString, max: 5, idleTimeoutMillis: 10_000 });
   attachDatabasePool(pool); // release idle clients before Vercel suspends the function
   return pool;
 }
