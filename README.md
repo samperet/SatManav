@@ -62,18 +62,24 @@ Sign in with `ADMIN_PASSWORD`. Pick a range (7 / 30 / 90 days, 12 months) to see
 
 Visitors can submit a testimonial from the homepage (name, optional private email, text, permission to publish). Submissions are saved as **pending** and Shug gets an email. Approved ones appear on the homepage within about a minute (edge-cached), ahead of the original testimonials.
 
-## Database (Supabase)
+## Database & photo storage (Vercel)
 
-Project **satmanav** (`awzphbubjvsrctmuqhoi`, US East) in the Colloqui org. Tables `pageviews`, `leads`, `testimonials` and the private `lead-photos` bucket have row-level security on with **no public policies**: only the website's server (secret key) can read or write. Dashboard numbers come from the `admin_stats` SQL function.
+Everything lives on the Vercel project **sat-manav**:
+
+- **Postgres (Neon via Vercel Storage)**: tables `pageviews`, `leads`, `testimonials`. Vercel injects `DATABASE_URL`. Tables are **created automatically** the first time the site touches the database (`src/lib/server/schema.ts`), so there is no migration step. Dashboard numbers come from one SQL query in `src/lib/server/stats.ts`.
+- **Private Vercel Blob store `satmanav-photos`**: inspirational photos from the Journey form. Vercel injects `BLOB_READ_WRITE_TOKEN`. Photos are never public; the admin views them through `/api/admin/photo`, which requires the admin session.
+
+Only the website's server functions can reach either store.
 
 ## Environment variables (Vercel)
 
-| Variable | Needed for |
-| --- | --- |
-| `ADMIN_PASSWORD` | Signing in to `/admin` |
-| `SUPABASE_SECRET_KEY` | Saving visits, leads, testimonials; the dashboard (Supabase → Project Settings → API Keys → secret key) |
-| `RESEND_API_KEY` | Notification emails to Shug |
-| `LEAD_TO_EMAIL`, `LEAD_FROM_EMAIL` | Optional overrides (see above) |
+| Variable | Set by | Needed for |
+| --- | --- | --- |
+| `DATABASE_URL` | Vercel, when the Neon database is connected | Visits, leads, testimonials, the dashboard |
+| `BLOB_READ_WRITE_TOKEN` | Vercel (already connected) | Storing inspirational photos |
+| `ADMIN_PASSWORD` | You | Signing in to `/admin` (changing it signs everyone out) |
+| `RESEND_API_KEY` | You | Notification emails to Shug |
+| `LEAD_TO_EMAIL`, `LEAD_FROM_EMAIL` | You (optional) | Overrides (see above) |
 
 The form works with either email or the database configured, and best with both.
 

@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getSecret } from 'astro:env/server';
-import { db } from '../../lib/server/supabase';
+import { dbConfigured, dbUrl, query } from '../../lib/server/db';
 import { attribute, clientIp, deviceInfo, geo, isBot, visitorId, type Touch } from '../../lib/server/attribution';
 
 // Cookieless page-view beacon. Stores no IP and no raw user agent.
@@ -9,9 +8,8 @@ export const prerender = false;
 const ok = () => new Response(null, { status: 204 });
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
-  const client = db();
   const ua = request.headers.get('user-agent') ?? '';
-  if (!client || isBot(ua)) return ok();
+  if (!dbConfigured() || isBot(ua)) return ok();
 
   let body: { p?: string; entry?: boolean; t?: Touch };
   try {
@@ -23,19 +21,31 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!path.startsWith('/') || path.startsWith('/admin') || path.startsWith('/api')) return ok();
 
   const a = body.entry ? attribute(body.t ?? {}) : null;
-  const row = {
-    visitor: await visitorId(clientIp(request, clientAddress), ua, getSecret('SUPABASE_SECRET_KEY') ?? ''),
-    path,
-    source: a?.source ?? null,
-    medium: a?.medium ?? null,
-    referrer_host: a?.referrer_host ?? null,
-    utm_source: a?.utm_source ?? null,
-    utm_medium: a?.utm_medium ?? null,
-    utm_campaign: a?.utm_campaign ?? null,
-    ...geo(request.headers),
-    ...deviceInfo(ua),
-  };
-  const { error } = await client.from('pageviews').insert(row);
-  if (error) console.error('[track]', error.message);
+  const g = geo(request.headers);
+  const d = deviceInfo(ua);
+  try {
+    await query(
+      `insert into pageviews (visitor, path, source, medium, referrer_host, utm_source, utm_medium, utm_campaign, country, region, city, device, browser, os)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+      [
+        await visitorId(clientIp(request, clientAddress), ua, dbUrl()),
+        path,
+        a?.source ?? null,
+        a?.medium ?? null,
+        a?.referrer_host ?? null,
+        a?.utm_source ?? null,
+        a?.utm_medium ?? null,
+        a?.utm_campaign ?? null,
+        g.country,
+        g.region,
+        g.city,
+        d.device,
+        d.browser,
+        d.os,
+      ],
+    );
+  } catch (err) {
+    console.error('[track]', err);
+  }
   return ok();
 };

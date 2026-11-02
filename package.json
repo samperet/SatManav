@@ -12,11 +12,14 @@
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
     "@astrojs/vercel": "^8.2.11",
-    "@supabase/supabase-js": "^2.117.3",
-    "astro": "^5.18.2"
+    "@vercel/blob": "^2.8.2",
+    "@vercel/functions": "^3.10.5",
+    "astro": "^5.18.2",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@types/pg": "^8.23.1",
     "typescript": "^5.9.3"
   }
 }
