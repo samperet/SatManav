@@ -37,7 +37,7 @@ Emails are sent with [Resend](https://resend.com). Set these in Vercel → Proje
 
 | Variable | Value |
 | --- | --- |
-| `RESEND_API_KEY` | API key from resend.com (required) |
+| `RESEND_API_KEY` (or `RESEND_API`) | API key from resend.com (required) |
 | `LEAD_TO_EMAIL` | Optional; defaults to `satmanavyogi@gmail.com` |
 | `LEAD_FROM_EMAIL` | Optional; defaults to `Sat Manav Website <onboarding@resend.dev>` |
 
@@ -94,7 +94,7 @@ Only the website's server functions can reach either store.
 | `DATABASE_URL` | Vercel, when the Neon database is connected | Visits, leads, testimonials, the dashboard |
 | `BLOB_READ_WRITE_TOKEN` | Vercel (already connected) | Storing inspirational photos |
 | `ADMIN_PASSWORD` | You | Signing in to `/admin` (changing it signs everyone out) |
-| `RESEND_API_KEY` | You | Notification emails to Shug |
+| `RESEND_API_KEY` (or `RESEND_API`) | You | Notification emails to Shug |
 | `LEAD_TO_EMAIL`, `LEAD_FROM_EMAIL` | You (optional) | Overrides (see above) |
 
 The form works with either email or the database configured, and best with both.

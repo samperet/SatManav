@@ -7,8 +7,12 @@ export type Attachment = { filename: string; content: string };
 
 /** Email Shug via Resend. Returns false (without throwing) when email isn't configured. */
 export async function sendEmail(opts: { subject: string; rows: [string, string][]; replyTo?: string; attachments?: Attachment[]; footer?: string }) {
-  const apiKey = getSecret('RESEND_API_KEY');
-  if (!apiKey) return false;
+  // Either name works: RESEND_API_KEY (Resend's usual name) or RESEND_API.
+  const apiKey = getSecret('RESEND_API_KEY') || getSecret('RESEND_API');
+  if (!apiKey) {
+    console.warn('[email] No Resend API key set (RESEND_API_KEY or RESEND_API); email skipped');
+    return false;
+  }
   const to = getSecret('LEAD_TO_EMAIL') || 'satmanavyogi@gmail.com';
   const from = getSecret('LEAD_FROM_EMAIL') || 'Sat Manav Website <onboarding@resend.dev>';
   const { subject, rows, replyTo, attachments = [], footer = '' } = opts;
