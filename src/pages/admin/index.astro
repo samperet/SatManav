@@ -99,6 +99,21 @@ const T_STATUS = [
   { key: 'rejected', label: 'Rejected' },
 ] as const;
 const tCount = (k: string) => testimonials.filter((x) => x.status === k).length;
+
+// Form submissions: finished journeys are shown in full; email-only leads as a compact list.
+const completed = leads.filter((l) => l.stage === 'details');
+const emailOnly = leads.filter((l) => l.stage !== 'details');
+const newCount = leads.filter((l) => l.status === 'new').length;
+const leadName = (l: Lead) => [l.first_name, l.last_name].filter(Boolean).join(' ');
+const leadWhere = (l: Lead) => [l.city, l.region, l.country].filter(Boolean).join(', ');
+const leadText = (l: Lead) => [leadName(l), l.email, l.phone, l.intention, l.message, l.source].filter(Boolean).join(' ').toLowerCase();
+const leadRatings = (l: Lead) =>
+  ([['Geometric', l.geometric], ['Abstract', l.abstract], ['Eastern Traditional', l.eastern]] as [string, number | null][]).filter(
+    (r): r is [string, number] => !!r[1],
+  );
+const leadSource = (l: Lead) =>
+  [l.source ?? 'Direct', l.medium, l.utm_campaign && `campaign: ${l.utm_campaign}`, l.referrer_host && `via ${l.referrer_host}`].filter(Boolean).join(' · ');
+const replyHref = (l: Lead) => `mailto:${l.email}?subject=${encodeURIComponent('Your Sat Manav journey')}`;
 const pendingCount = tCount('pending');
 ---
 <Admin title="Dashboard" signedIn>
@@ -109,12 +124,6 @@ const pendingCount = tCount('pending');
     <a class="a-btn a-btn--ghost" href={`/api/admin/leads.csv?days=${days}`} download>Export leads (CSV)</a>
   </div>
 
-  {configured && <Notify />}
-
-  {pendingCount > 0 && (
-    <a class="callout" href="#testimonials">{pendingCount} testimonial{pendingCount === 1 ? '' : 's'} awaiting approval →</a>
-  )}
-
   {!configured && (
     <section class="card setup">
       <h2>Finish setup</h2>
@@ -122,6 +131,137 @@ const pendingCount = tCount('pending');
     </section>
   )}
   {loadError && <p class="a-error" role="alert">Could not load data: {loadError}</p>}
+
+  {stats && (
+    <section class="card responses" id="leads" aria-labelledby="leads-title">
+      <div class="leads-head">
+        <div>
+          <h2 class="responses__title" id="leads-title">Form submissions <span class="count">{leads.length}</span></h2>
+          <p class="card__sub">
+            {completed.length} completed · {emailOnly.length} email only{newCount > 0 && <> · <strong class="new-count">{newCount} new</strong></>} · {rangeLabel}
+          </p>
+        </div>
+        <div class="leads-tools">
+          <input type="search" placeholder="Search name, email, answers…" aria-label="Search submissions" data-lead-search />
+          <select aria-label="Filter by status" data-lead-filter>
+            <option value="">All statuses</option>
+            {Object.entries(STATUS).map(([v, l]) => <option value={v}>{l}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {leads.length === 0 && <p class="empty">No submissions in the {rangeLabel}.</p>}
+
+      {completed.length > 0 && (
+        <div class="responses__grid">
+          {completed.map((l) => {
+            const name = leadName(l);
+            const where = leadWhere(l);
+            const ratings = leadRatings(l);
+            return (
+              <article class={`lead response${l.status === 'new' ? ' is-new' : ''}`} data-status={l.status} data-text={leadText(l)}>
+                <header class="response__head">
+                  <div class="response__who">
+                    <h3>{name || l.email}</h3>
+                    <p class="response__contact">
+                      <a href={`mailto:${l.email}`}>{l.email}</a>
+                      {l.phone && <a href={`tel:${l.phone}`}>{l.phone}</a>}
+                    </p>
+                  </div>
+                  <span class={`chip chip--status chip--${l.status}`} data-status-chip>{STATUS[l.status]}</span>
+                </header>
+                <p class="response__meta">{when(l.created_at)} · {l.source ?? 'Direct'}{where && ` · ${where}`}</p>
+
+                {l.intention && (
+                  <div class="answer">
+                    <h4>What is your intention for our work together?</h4>
+                    <blockquote class="pre">{l.intention}</blockquote>
+                  </div>
+                )}
+                {ratings.length > 0 && (
+                  <div class="answer">
+                    <h4>Themes to incorporate</h4>
+                    <ul class="ratings">
+                      {ratings.map(([k, v]) => (
+                        <li>
+                          <span class="ratings__name">{k}</span>
+                          <span class="stars" role="img" aria-label={`${v} out of 5`}>
+                            {[1, 2, 3, 4, 5].map((n) => <i class={n <= v ? 'on' : undefined} aria-hidden="true">★</i>)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {l.message && (
+                  <div class="answer">
+                    <h4>Anything else you want to add?</h4>
+                    <p class="pre">{l.message}</p>
+                  </div>
+                )}
+                {l.photos?.length > 0 && (
+                  <div class="answer">
+                    <h4>Inspirational photos <span class="count">{l.photos.length}</span></h4>
+                    <ul class="photos">
+                      {l.photos.map((path, i) => (
+                        <li><a href={photoUrl(path)} target="_blank" rel="noopener"><img src={photoUrl(path)} alt={`Inspirational photo ${i + 1} from ${name || l.email}`} loading="lazy" /></a></li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {!l.intention && ratings.length === 0 && !l.message && !(l.photos?.length > 0) && <p class="empty">No answers beyond contact details.</p>}
+
+                <details class="response__src">
+                  <summary>Where they came from</summary>
+                  <p>{leadSource(l)}{l.landing_path && ` · landed on ${l.landing_path}`}{l.device && ` · ${l.device}`}</p>
+                </details>
+
+                <footer class="lead__actions">
+                  <a class="a-btn" href={replyHref(l)}>Reply by email</a>
+                  <label>Status
+                    <select data-lead-status={l.id}>
+                      {Object.entries(STATUS).map(([v, lab]) => <option value={v} selected={v === l.status}>{lab}</option>)}
+                    </select>
+                  </label>
+                </footer>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {emailOnly.length > 0 && (
+        <div class="email-only">
+          <h3 class="email-only__title">Email only <span class="count">{emailOnly.length}</span></h3>
+          <p class="card__sub">They left an email but haven't filled in the rest of the form yet.</p>
+          <ul class="email-only__list">
+            {emailOnly.map((l) => (
+              <li class={`lead email-lead${l.status === 'new' ? ' is-new' : ''}`} data-status={l.status} data-text={leadText(l)}>
+                <a class="email-lead__addr" href={`mailto:${l.email}`}>{l.email}</a>
+                <span class="email-lead__meta">{when(l.created_at)} · {l.source ?? 'Direct'}</span>
+                <span class={`chip chip--status chip--${l.status}`} data-status-chip>{STATUS[l.status]}</span>
+                <span class="lead__actions">
+                  <a class="a-btn a-btn--ghost" href={replyHref(l)}>Reply</a>
+                  <label><span class="sr-only">Status for {l.email}</span>
+                    <select data-lead-status={l.id}>
+                      {Object.entries(STATUS).map(([v, lab]) => <option value={v} selected={v === l.status}>{lab}</option>)}
+                    </select>
+                  </label>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <p class="empty" hidden data-lead-none>No submissions match.</p>
+    </section>
+  )}
+
+  {pendingCount > 0 && (
+    <a class="callout" href="#testimonials">{pendingCount} testimonial{pendingCount === 1 ? '' : 's'} awaiting approval →</a>
+  )}
+
+  {configured && <Notify />}
 
   {stats && (
     <>
@@ -180,65 +320,6 @@ const pendingCount = tCount('pending');
         <Ranked title="Campaigns (utm_campaign)" rows={rows(stats.campaigns, 'visits')} unit="visits" />
       </section>
 
-      <section class="card" id="leads">
-        <div class="leads-head">
-          <h2 class="card__title">Form responses <span class="count">{leads.length}</span></h2>
-          <div class="leads-tools">
-            <input type="search" placeholder="Search name, email, text…" aria-label="Search responses" data-lead-search />
-            <select aria-label="Filter by status" data-lead-filter>
-              <option value="">All statuses</option>
-              {Object.entries(STATUS).map(([v, l]) => <option value={v}>{l}</option>)}
-            </select>
-          </div>
-        </div>
-        {leads.length === 0 ? <p class="empty">No responses in the {rangeLabel}.</p> : (
-          <div class="leads">
-            {leads.map((l) => {
-              const name = [l.first_name, l.last_name].filter(Boolean).join(' ');
-              const where = [l.city, l.region, l.country].filter(Boolean).join(', ');
-              const ratings = ([['Geometric', l.geometric], ['Abstract', l.abstract], ['Eastern Traditional', l.eastern]] as const).filter(([, v]) => v);
-              const haystack = [name, l.email, l.phone, l.intention, l.message, l.source].filter(Boolean).join(' ').toLowerCase();
-              return (
-                <details class="lead" data-status={l.status} data-text={haystack}>
-                  <summary>
-                    <span class="lead__when">{when(l.created_at)}</span>
-                    <span class="lead__who"><strong>{name || l.email}</strong>{name && <small>{l.email}</small>}</span>
-                    <span class={`chip chip--${l.stage}`}>{l.stage === 'details' ? 'Completed' : 'Email only'}</span>
-                    <span class="lead__src">{l.source ?? 'Direct'}</span>
-                    <span class={`chip chip--status chip--${l.status}`} data-status-chip>{STATUS[l.status]}</span>
-                  </summary>
-                  <div class="lead__body">
-                    <dl>
-                      <dt>Email</dt><dd><a href={`mailto:${l.email}`}>{l.email}</a></dd>
-                      {l.phone && <><dt>Phone</dt><dd><a href={`tel:${l.phone}`}>{l.phone}</a></dd></>}
-                      {l.intention && <><dt>Intention</dt><dd class="pre">{l.intention}</dd></>}
-                      {ratings.length > 0 && <><dt>Style</dt><dd>{ratings.map(([k, v]) => <span class="rating-pill">{k} {v}/5</span>)}</dd></>}
-                      {l.message && <><dt>Anything else</dt><dd class="pre">{l.message}</dd></>}
-                      <dt>Source</dt><dd>{[l.source ?? 'Direct', l.medium, l.utm_campaign && `campaign: ${l.utm_campaign}`, l.referrer_host && `via ${l.referrer_host}`].filter(Boolean).join(' · ')}{l.landing_path && <small> · landed on {l.landing_path}</small>}</dd>
-                      {(where || l.device) && <><dt>Visitor</dt><dd>{[where, l.device].filter(Boolean).join(' · ')}</dd></>}
-                    </dl>
-                    {l.photos?.length > 0 && (
-                      <ul class="photos">
-                        {l.photos.map((path) => (
-                          <li><a href={photoUrl(path)} target="_blank" rel="noopener"><img src={photoUrl(path)} alt="Inspirational photo" loading="lazy" /></a></li>
-                        ))}
-                      </ul>
-                    )}
-                    <div class="lead__actions">
-                      <a class="a-btn" href={`mailto:${l.email}?subject=${encodeURIComponent('Your Sat Manav journey')}`}>Reply by email</a>
-                      <label>Status
-                        <select data-lead-status={l.id}>
-                          {Object.entries(STATUS).map(([v, lab]) => <option value={v} selected={v === l.status}>{lab}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                  </div>
-                </details>
-              );
-            })}
-          </div>
-        )}
-      </section>
     </>
   )}
   {configured && (
@@ -346,6 +427,7 @@ const pendingCount = tCount('pending');
       prev = sel.value;
       const lead = sel.closest<HTMLElement>('.lead')!;
       lead.dataset.status = sel.value;
+      lead.classList.toggle('is-new', sel.value === 'new');
       const chip = lead.querySelector<HTMLElement>('[data-status-chip]')!;
       chip.textContent = sel.selectedOptions[0].textContent;
       chip.className = `chip chip--status chip--${sel.value}`;
@@ -402,9 +484,17 @@ const pendingCount = tCount('pending');
   const apply = () => {
     const q = (search?.value ?? '').trim().toLowerCase();
     const st = filter?.value ?? '';
+    let shown = 0;
     document.querySelectorAll<HTMLElement>('.lead').forEach((l) => {
       l.hidden = (q !== '' && !l.dataset.text!.includes(q)) || (st !== '' && l.dataset.status !== st);
+      if (!l.hidden) shown++;
     });
+    // Hide a group's heading when none of its entries match.
+    document.querySelectorAll<HTMLElement>('.responses__grid, .email-only').forEach((g) => {
+      g.hidden = !g.querySelector('.lead:not([hidden])');
+    });
+    const none = document.querySelector<HTMLElement>('[data-lead-none]');
+    if (none) none.hidden = shown > 0 || document.querySelectorAll('.lead').length === 0;
   };
   search?.addEventListener('input', apply);
   filter?.addEventListener('change', apply);

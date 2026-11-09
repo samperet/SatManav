@@ -47,11 +47,11 @@ Resend's test sender (`onboarding@resend.dev`) can only deliver to the email add
 
 Sign in with `ADMIN_PASSWORD`. Pick a range (7 / 30 / 90 days, 12 months) to see:
 
+- **Form submissions first**, at the top of the page: every completed Journey as a card showing their answers in full (intention, theme ratings, message, inspirational photos) with Reply and a status (New / Contacted / Booked / Archived); below them, people who left only an email. New ones are marked in red. Search and filter by status, or export CSV.
 - **Visitors, page views, leads, completed journeys, conversion**, each compared with the previous period
 - **Visitors and leads per day** (hover for values, or "View as table")
 - **Where traffic comes from**: Instagram, Google, Facebook, direct, campaign tags… with leads and conversion per source
 - Referring sites, landing pages, top pages, countries, cities, devices, browsers, `utm_campaign`s
-- **Form responses**: every lead with intention, ratings, message, photos and source; set a status (New / Contacted / Booked / Archived), search, reply by email, export CSV
 - **Testimonials**: approve, edit wording, reject, unpublish or delete submissions
 
 **Tag your links** so sources show by name: `?src=instagram` (Instagram bio), `?src=card` (business cards / QR), `?src=gbp` (Google Business Profile), or standard `utm_source` / `utm_campaign`.
