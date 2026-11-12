@@ -96,7 +96,7 @@ p { margin: 0 0 1em; text-wrap: pretty; }
 
 /* Hero */
 .hero { position: relative; min-height: 88svh; display: grid; place-items: center; overflow: hidden; isolation: isolate; padding: 110px 0 70px; background: radial-gradient(70% 60% at 50% 45%, #f4ead1 0%, var(--parchment) 45%, #c9b48a 100%); }
-.hero__ganesha { position: absolute; z-index: -1; left: 50%; top: 50%; width: min(520px, 80vw); translate: -50% -50%; opacity: .22; mix-blend-mode: multiply; }
+.hero__art { position: absolute; z-index: -1; left: 50%; top: 50%; height: 92%; width: auto; max-width: 86vw; object-fit: contain; translate: -50% -50%; opacity: .26; mix-blend-mode: multiply; }
 .hero__inner { text-align: center; display: grid; justify-items: center; gap: 28px; }
 .hero__word { display: block; font-family: var(--f-display); font-weight: 900; font-size: clamp(3.2rem, 11vw, 9rem); line-height: .95; color: #140505; }
 .hero__sub { display: block; font-family: var(--f-display); font-weight: 700; font-size: clamp(1.4rem, 3.6vw, 3rem); color: var(--blood); margin-top: 8px; }
