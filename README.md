@@ -7,7 +7,7 @@ It keeps the original crimson, ink and parchment style, lotus emblem, mantra tic
 
 | Route | What it is |
 | --- | --- |
-| `/` | Hero, intro, artist, teachings (collapsible), gallery, testimonials (+ submit form), additional offerings |
+| `/` | Hero, intro, artist, teachings (collapsible), gallery + Instagram feed, testimonials (+ submit form), additional offerings |
 | `/journey` | Two-step lead form: email first, then details + inspirational photos |
 | `/gallery` | Full gallery with lightbox (keyboard + swipe) |
 | `/admin` | Password-protected dashboard: traffic, sources, form responses, testimonial approvals |
@@ -21,6 +21,12 @@ Old shop URLs (`/shop`, `/product/...`) redirect to the homepage via `vercel.jso
 Everything lives in **`src/data/site.ts`**: contact details, gallery items, teachings, testimonials and offerings.
 
 - **Gallery**: add `public/images/gallery/<slug>.webp` (≈1200px wide) and `<slug>-sm.webp` (≈520px wide), then add an entry to `gallery`.
+
+## Instagram feed
+
+The Gallery section on the homepage ends with Instagram's own profile embed for [@satmanavyogi_tattoo](https://www.instagram.com/satmanavyogi_tattoo/): the profile header and the six latest posts. It updates by itself whenever a new post goes up, with no account, token or API key. The handle comes from `site.social.instagram` in `src/data/site.ts`.
+
+The embed is Instagram's public profile embed (`/embed/`), which Instagram doesn't formally document, so they could change it. If it ever stops showing, the "Instagram" heading and handle above it still link to the profile. The frame's height is sized in `src/styles/global.css` (`.insta__frame`) to end just below the posts. Instagram, not this site, may set its own cookies inside the embed.
 
 ## Journey form & lead emails
 

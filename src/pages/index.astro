@@ -2,7 +2,12 @@
 import Base from '../layouts/Base.astro';
 import Ticker from '../components/Ticker.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
-import { intro, artist, teachings, testimonials, offerings, gallery } from '../data/site';
+import { site, intro, artist, teachings, testimonials, offerings, gallery } from '../data/site';
+
+// Instagram's profile embed: header plus the latest posts, updated by Instagram itself.
+const igProfile = site.social.instagram;
+const igHandle = new URL(igProfile).pathname.replaceAll('/', '');
+const igEmbed = `${igProfile}embed/`;
 
 const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 ---
@@ -63,6 +68,20 @@ const roman = ['I', 'II', 'III', 'IV', 'V', 'VI'];
       <h2 class="h2" style="margin-bottom:32px"><a href="/gallery" style="text-decoration:none">Gallery</a></h2>
       <GalleryGrid items={gallery} />
       <p style="text-align:center;margin-top:28px"><a class="link-arrow" href="/gallery">See the full gallery →</a></p>
+
+      <div class="insta" id="instagram">
+        <h2 class="insta__title"><a href={igProfile} target="_blank" rel="noopener">Instagram</a></h2>
+        <a class="insta__handle" href={igProfile} target="_blank" rel="noopener">@{igHandle}</a>
+        <div class="insta__frame">
+          <iframe
+            src={igEmbed}
+            title={`@${igHandle} on Instagram: latest posts`}
+            loading="lazy"
+            scrolling="no"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          ></iframe>
+        </div>
+      </div>
     </div>
   </section>
 
